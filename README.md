@@ -1,4 +1,4 @@
-# StackHPC pulp collection
+# StackHPC hashicorp collection
 
 This repo contains `stackhpc.hashicorp` Ansible Collection. The collection includes roles supported by StackHPC for Hashicorp Vault/Consul deployment and configuration.
 
