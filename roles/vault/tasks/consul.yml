@@ -1,0 +1,25 @@
+---
+- name: Ensure consul_server container is running
+  docker_container:
+    name: "{{ consul_docker_name }}"
+    image: "{{ consul_docker_image }}:{{ consul_docker_tag }}"
+    network_mode: host
+    volumes:
+      - "{{ consul_docker_volume }}:/consul/data"
+    comparisons:
+      '*': strict
+    env:
+      CONSUL_BIND_INTERFACE: "{{ consul_bind_interface }}"
+      CONSUL_CLIENT_INTERFACE: "{{ consul_bind_interface }}"
+    command: >
+      consul agent
+      -bind "{{  hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
+      -data-dir /consul/data
+      -server
+      -bootstrap-expect "{{ groups['consul'] | length }}"
+      {% for host in groups['consul'] %}
+      {% if host != inventory_hostname %}
+      -retry-join "{{ hostvars[host]['ansible_'~consul_bind_interface].ipv4.address }}"
+      {% endif %}
+      {% endfor %}
+  become: True

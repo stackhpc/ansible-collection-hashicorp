@@ -1,0 +1,36 @@
+---
+- name: Ensure vault container is running
+  docker_container:
+    name: "{{ vault_docker_name }}"
+    image: "{{ vault_docker_image }}:{{ vault_docker_tag }}"
+    network_mode: host
+    capabilities: IPC_LOCK
+    volumes:
+      - "{{ vault_config_dir }}:/vault/config"
+    comparisons:
+      '*': strict
+    env:
+      VAULT_LOCAL_CONFIG: "{{ vault_config | to_json }}"
+    command: >
+      server
+  become: True
+
+- name: Check if vault is initialized
+  uri:
+    url: "https://{{ vault_vip_url }}:8200/v1/sys/init"
+  register: vault_init_status
+  retries: 10
+
+- name: Initialize vault
+  command: "docker exec -e 'VAULT_ADDR=https://{{ vault_vip_url }}:8200' {{ vault_docker_name }} vault operator init -format yaml"
+  when: not vault_init_status.json.initialized
+  run_once: True
+  register: vault_init_output
+
+- name: Set fact
+  set_fact:
+    vault_keys: "{{ vault_init_output.stdout | from_yaml }}"
+
+- name: Print vault keys
+  debug:
+    var: vault_keys

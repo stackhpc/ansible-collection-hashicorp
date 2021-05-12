@@ -1,0 +1,13 @@
+namespace: "stackhpc"
+name: "hashicorp"
+version: "1.0.0"
+readme: "README.md"
+authors:
+  - "Michał Nasiadka"
+license:
+  - "Apache-2.0"
+tags:
+  - hashicorp
+  - vault
+  - consul
+repository: "https://github.com/stackhpc/ansible-collection-hashicorp"

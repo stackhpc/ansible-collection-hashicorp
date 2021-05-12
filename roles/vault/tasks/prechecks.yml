@@ -1,0 +1,5 @@
+---
+- name: Check if consul_bind_interface is defined
+  fail:
+    msg: "ERROR: consul_bind_interface must be defined"
+  when: not consul_bind_interface

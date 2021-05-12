@@ -1,0 +1,42 @@
+---
+consul_docker_name: "consul"
+consul_docker_image: "consul"
+consul_docker_tag: "latest"
+consul_docker_volume: "consul_data"
+
+vault_docker_name: "vault"
+vault_docker_image: "vault"
+vault_docker_tag: "latest"
+
+vault_cluster_name: ""
+vault_tls_key: ""
+vault_tls_cert: ""
+
+vault_config: >
+  {
+    "cluster_name": "{{ vault_cluster_name }}",
+    "ui": true,
+    "api_addr": "https://{{ vault_vip_url }}:8200",
+    "listener": [{
+      "tcp": {
+        "address": "{{ vault_bind_address }}:8200",
+        "tls_min_version": "tls12",
+        "tls_key_file": "/vault/config/tls.key",
+        "tls_cert_file": "/vault/config/tls.cert"
+      }
+    }],
+    "storage": {
+    "consul": {
+       "address": "127.0.0.1:8500",
+       "path": "vault/"
+      }
+    },
+    "telemetry": {
+      "prometheus_retention_time": "30s",
+      "disable_hostname": true
+    }
+  }
+
+consul_bind_interface: ""
+consul_bind_ip: "{{ hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
+consul_vip_address: ""
