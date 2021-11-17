@@ -59,7 +59,7 @@ Example playbook (used with OpenStack Kayobe)
   roles:
     - role: stackhpc.hashicorp.vault
       consul_bind_interface: "{{ internal_net_interface }}"
-      consul_bind_ip: "{{ internal_net_ips[ansible_hostnanme] }}"
+      consul_bind_ip: "{{ internal_net_ips[ansible_hostname] }}"
       consul_vip_address: "{{ internal_net_vip_address }}"
       vault_bind_address: "{{ external_net_ips[ansible_hostname] }}"
       vault_vip_url: "{{ external_net_fqdn }}"
