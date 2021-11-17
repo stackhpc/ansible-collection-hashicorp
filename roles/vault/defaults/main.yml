@@ -40,3 +40,7 @@ vault_config: >
 consul_bind_interface: ""
 consul_bind_ip: "{{ hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
 consul_vip_address: ""
+
+# Docker options
+vault_container: {}
+consul_container: {}
