@@ -12,11 +12,19 @@ Role variables
     * `consul_docker_image`: Docker image for Consul (default: "consul")
     * `consul_docker_tag`: Docker image tag for Consul (default: "latest")
     * `consul_docker_volume`: Docker volume name for Consul data (default: "consul_data")
+    * `consul_container.etc_hosts`: Dict of `{<hostname>:<ip_address>}` to be added to container /etc/hosts (default: Omitted)
+    * `consul_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
+
 * Vault
   * Mandatory
     * `vault_cluster_name`: Vault cluster name (e.g. "prod_cluster")
     * `vault_tls_key`: Path to TLS key to use by Vault
     * `vault_tls_cert`: Path to TLS cert to use by Vault
+  * Optional
+    * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
+s (default: Omitted)
+    * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
+
 
 
 Example playbook (used with OpenStack Kayobe)
