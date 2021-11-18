@@ -40,3 +40,22 @@ vault_config: >
 consul_bind_interface: ""
 consul_bind_ip: "{{ hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
 consul_vip_address: ""
+
+# Docker options
+vault_container: {}
+consul_container: {}
+
+# Docker volumes
+# Default volume mapping
+_vault_default_volumes:
+  - "{{ vault_config_dir }}:/vault/config"
+_consul_default_volumes:
+  - "{{ consul_docker_volume }}:/consul/data"
+
+# Exposed for playbooks to access later
+vault_extra_volumes: []
+consul_extra_volumes: []
+
+# Combined volume lists
+_vault_volumes: "{{ _vault_default_volumes + vault_extra_volumes }}"
+_consul_volumes: "{{ _consul_default_volumes + consul_extra_volumes }}"

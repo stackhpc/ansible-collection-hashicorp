@@ -4,8 +4,8 @@
     name: "{{ consul_docker_name }}"
     image: "{{ consul_docker_image }}:{{ consul_docker_tag }}"
     network_mode: host
-    volumes:
-      - "{{ consul_docker_volume }}:/consul/data"
+    etc_hosts: "{{ consul_container.etc_hosts | default(omit) }}"
+    volumes: "{{ _consul_volumes }}"
     comparisons:
       '*': strict
     env:

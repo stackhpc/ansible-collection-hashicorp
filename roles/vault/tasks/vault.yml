@@ -4,9 +4,9 @@
     name: "{{ vault_docker_name }}"
     image: "{{ vault_docker_image }}:{{ vault_docker_tag }}"
     network_mode: host
+    etc_hosts: "{{ vault_container.etc_hosts | default(omit) }}"
     capabilities: IPC_LOCK
-    volumes:
-      - "{{ vault_config_dir }}:/vault/config"
+    volumes: "{{ _vault_volumes }}"
     comparisons:
       '*': strict
     env:
