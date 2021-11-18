@@ -21,6 +21,7 @@
   register: vault_init_status
   retries: 10
   delay: 2
+  until: result is not failed
 
 - name: Initialize vault
   command: "docker exec -e 'VAULT_ADDR=https://{{ vault_vip_url }}:8200' {{ vault_docker_name }} vault operator init -format yaml"
