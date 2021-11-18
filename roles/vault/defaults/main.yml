@@ -44,3 +44,5 @@ consul_vip_address: ""
 # Docker options
 vault_container: {}
 consul_container: {}
+
+include_vars: "docker_volumes.yml"
