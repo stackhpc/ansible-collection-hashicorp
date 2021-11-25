@@ -18,8 +18,11 @@ Role variables
 * Vault
   * Mandatory
     * `vault_cluster_name`: Vault cluster name (e.g. "prod_cluster")
+    * `vault_bind_address`: Which IP address should Vault bind to
+    * `vault_vip_address`: Under which IP address Vault should be available (this role does not deploy keepalived)
     * `vault_tls_key`: Path to TLS key to use by Vault
     * `vault_tls_cert`: Path to TLS cert to use by Vault
+    * `vault_config_dir`: Directory into which to bind mount Vault configuration
   * Optional
     * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
 s (default: Omitted)
@@ -70,7 +73,7 @@ Example playbook (used with OpenStack Kayobe)
       consul_bind_ip: "{{ internal_net_ips[ansible_hostname] }}"
       consul_vip_address: "{{ internal_net_vip_address }}"
       vault_bind_address: "{{ external_net_ips[ansible_hostname] }}"
-      vault_vip_url: "{{ external_net_fqdn }}"
+      vault_vip_address: "{{ external_net_fqdn }}"
       vault_config_dir: "/opt/kayobe/vault"
 ```
 
