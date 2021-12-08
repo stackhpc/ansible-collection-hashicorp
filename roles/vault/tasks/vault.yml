@@ -17,7 +17,7 @@
 
 - name: Check if vault is initialized
   uri:
-    url: "https://{{ vault_vip_url }}:8200/v1/sys/init"
+    url: "{{ (vault_tls_key | length == 0) | ternary('http', 'https') }}://{{ vault_vip_url }}:8200/v1/sys/init"
   register: vault_init_status
   retries: 50
   delay: 1
