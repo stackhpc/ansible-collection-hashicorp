@@ -9,8 +9,13 @@ vault_docker_image: "vault"
 vault_docker_tag: "latest"
 
 vault_cluster_name: ""
+# Allow vault_vip_url for backwards compatibility.
+vault_vip_address: "{{ vault_vip_url | default('') }}"
+vault_bind_address: ""
 vault_tls_key: ""
 vault_tls_cert: ""
+
+vault_config_dir: ""
 
 vault_config: >
   {

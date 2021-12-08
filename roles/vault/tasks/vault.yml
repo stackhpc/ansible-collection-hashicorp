@@ -17,14 +17,14 @@
 
 - name: Check if vault is initialized
   uri:
-    url: "{{ vault_vip_url }}/v1/sys/init"
+    url: "{{ vault_vip_address }}/v1/sys/init"
   register: vault_init_status
   retries: 50
   delay: 1
   until: vault_init_status.status == 200
 
 - name: Initialize vault
-  command: "docker exec -e 'VAULT_ADDR={{ vault_vip_url }}' {{ vault_docker_name }} vault operator init -format yaml"
+  command: "docker exec -e 'VAULT_ADDR={{ vault_vip_address }}' {{ vault_docker_name }} vault operator init -format yaml"
   when: not vault_init_status.json.initialized
   run_once: True
   register: vault_init_output
