@@ -18,7 +18,7 @@ Role variables
 * Vault
   * Mandatory
     * `vault_cluster_name`: Vault cluster name (e.g. "prod_cluster")
-    * `vault_vip_address`: Vault API addr, including protocol and port (e.g. "http://127.0.0.1:8200")
+    * `vault_api_addr`: Vault [API addr](https://www.vaultproject.io/docs/configuration#api_addr) - Full URL including protocol and port (e.g. "http://127.0.0.1:8200")
     * `vault_bind_address`: Which IP address should Vault bind to
     * `vault_tls_key`: Path to TLS key to use by Vault
     * `vault_tls_cert`: Path to TLS cert to use by Vault
@@ -73,7 +73,7 @@ Example playbook (used with OpenStack Kayobe)
       consul_bind_ip: "{{ internal_net_ips[ansible_hostname] }}"
       consul_vip_address: "{{ internal_net_vip_address }}"
       vault_bind_address: "{{ external_net_ips[ansible_hostname] }}"
-      vault_vip_address: "{{ external_net_fqdn }}"
+      vault_api_addr: "https://{{ external_net_fqdn }}:8200"
       vault_config_dir: "/opt/kayobe/vault"
 ```
 
