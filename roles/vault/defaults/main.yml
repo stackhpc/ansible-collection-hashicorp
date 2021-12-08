@@ -21,7 +21,7 @@ vault_config: >
   {
     "cluster_name": "{{ vault_cluster_name }}",
     "ui": true,
-    "api_addr": "{{ vault_vip_url }}",
+    "api_addr": "{{ vault_vip_address }}",
     "listener": [{
       "tcp": {
         "address": "{{ vault_bind_address }}:8200",
