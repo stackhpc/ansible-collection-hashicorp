@@ -16,7 +16,7 @@ vault_config: >
   {
     "cluster_name": "{{ vault_cluster_name }}",
     "ui": true,
-    "api_addr": "https://{{ vault_vip_url }}:8200",
+    "api_addr": "{{ vault_vip_url }}",
     "listener": [{
       "tcp": {
         "address": "{{ vault_bind_address }}:8200",
