@@ -1,0 +1,52 @@
+
+name: Tests
+
+# Controls when the action will run.
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ansible:
+          - stable-2.9
+          - stable-2.10
+          - devel
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install git+https://github.com/ansible/ansible.git@${{ matrix.ansible }}
+          pip install 'ansible-lint<5'
+
+      - name: Linting code
+        run: |
+          ansible-lint -v --force-color
+
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install ansible==5.* docker
+          ansible-galaxy collection install git+file://$(pwd)
+
+      # TODO: Use ansible-test to run these.
+      - name: Running integration tests
+        run: |
+          ansible-playbook -i tests/inventory -v tests/*.yml -e ansible_python_interpreter=$(which python3)
