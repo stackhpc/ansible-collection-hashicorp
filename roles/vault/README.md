@@ -42,7 +42,6 @@ Example playbook (used with OpenStack Kayobe)
   tasks:
     - name: Ensure /opt/kayobe/vault exists
       file:
-        state: present
         path: /opt/kayobe/vault
         state: directory
 
