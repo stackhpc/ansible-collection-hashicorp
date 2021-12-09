@@ -26,9 +26,13 @@ vault_config: >
     "listener": [{
       "tcp": {
         "address": "{{ vault_bind_address }}:8200",
+        {% if vault_tls_key and vault_tls_cert %}
         "tls_min_version": "tls12",
         "tls_key_file": "/vault/config/tls.key",
         "tls_cert_file": "/vault/config/tls.cert"
+        {% else %}
+        "tls_disable": "true"
+        {% endif %}
       }
     }],
     "storage": {
