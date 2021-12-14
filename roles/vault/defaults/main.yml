@@ -9,8 +9,9 @@ vault_docker_image: "vault"
 vault_docker_tag: "latest"
 
 vault_cluster_name: ""
-# Allow vault_vip_url for backwards compatibility.
+# Allow vault_vip_url and vault_vip_address for backwards compatibility.
 vault_vip_address: "{{ vault_vip_url | default('') }}"
+vault_api_addr: "{{ ('https://' ~ vault_vip_address ~ ':8200') if vault_vip_address else '' }}"
 vault_bind_address: ""
 vault_tls_key: ""
 vault_tls_cert: ""
@@ -21,7 +22,7 @@ vault_config: >
   {
     "cluster_name": "{{ vault_cluster_name }}",
     "ui": true,
-    "api_addr": "https://{{ vault_vip_url }}:8200",
+    "api_addr": "{{ vault_api_addr }}",
     "listener": [{
       "tcp": {
         "address": "{{ vault_bind_address }}:8200",
