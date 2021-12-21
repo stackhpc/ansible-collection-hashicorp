@@ -15,9 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         ansible:
-          - stable-2.9
-          - stable-2.10
-          - devel
+          - "2.9"
+          - "2.10"
+          - "2.12"
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
       - uses: actions/checkout@v2
@@ -25,8 +25,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install git+https://github.com/ansible/ansible.git@${{ matrix.ansible }}
-          pip install 'ansible-lint<5'
+          if [[ "${{ matrix.ansible }}" = "2.9" ]]; then
+              ansible_package=ansible
+          elif [[ "${{ matrix.ansible }}" = "2.10" ]]; then
+              ansible_package=ansible-base
+          else
+              ansible_package=ansible-core
+          fi
+          pip install $ansible_package==${{ matrix.ansible }}.* 'ansible-lint<5'
 
       - name: Linting code
         run: |
@@ -34,6 +40,13 @@ jobs:
 
   integration:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ansible:
+          - "2.9"
+          - "2.10"
+          - "2.12"
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
       - uses: actions/checkout@v2
@@ -43,8 +56,16 @@ jobs:
       - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install ansible==5.* docker
-          ansible-galaxy collection install git+file://$(pwd)
+          if [[ "${{ matrix.ansible }}" = "2.9" ]]; then
+              ansible_package=ansible
+          elif [[ "${{ matrix.ansible }}" = "2.10" ]]; then
+              ansible_package=ansible-base
+          else
+              ansible_package=ansible-core
+          fi
+          python3 -m pip install $ansible_package==${{ matrix.ansible }}.* docker
+          ansible-galaxy collection build
+          ansible-galaxy collection install *.tar.gz
 
       # TODO: Use ansible-test to run these.
       - name: Running integration tests
