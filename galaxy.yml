@@ -4,6 +4,8 @@ version: "1.0.0"
 readme: "README.md"
 authors:
   - "Michał Nasiadka"
+dependencies:
+  "community.docker": "*"
 license:
   - "Apache-2.0"
 tags:
