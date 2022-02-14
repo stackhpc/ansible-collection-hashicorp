@@ -1,0 +1,2 @@
+[consul]
+localhost ansible_connection=local

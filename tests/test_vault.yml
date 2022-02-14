@@ -1,0 +1,20 @@
+---
+- name: Prepare for vault role
+  gather_facts: True
+  hosts: consul
+  tasks:
+    - name: Ensure /etc/vault exists
+      file:
+        path: /etc/vault
+        state: directory
+      become: true
+
+    - include_role:
+        name: vault
+      vars:
+        consul_bind_interface: lo
+        consul_bind_ip: 127.0.0.1
+        consul_vip_address: 127.0.0.1
+        vault_bind_address: 127.0.0.1
+        vault_api_addr: http://127.0.0.1:8200
+        vault_config_dir: "/etc/vault"
