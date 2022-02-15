@@ -32,8 +32,7 @@ jobs:
           else
               ansible_package=ansible-core
           fi
-          # FIXME: rich pinned due to https://github.com/ansible-community/ansible-lint/issues/1795.
-          pip install $ansible_package==${{ matrix.ansible }}.* 'rich<11' 'ansible-lint<5'
+          pip install $ansible_package==${{ matrix.ansible }}.* 'ansible-lint==5.*'
 
       - name: Linting code
         run: |
