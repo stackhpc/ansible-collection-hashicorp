@@ -12,6 +12,10 @@ Role variables
     * `consul_docker_image`: Docker image for Consul (default: "consul")
     * `consul_docker_tag`: Docker image tag for Consul (default: "latest")
     * `consul_docker_volume`: Docker volume name for Consul data (default: "consul_data")
+    * `consul_container`: Additional data for pulling and configuring the Consul container
+      * `etc_hosts`: Dict of `{<hostname>:<ip_address>}` to be added to container /etc/hosts (default: Omitted)
+      * `registry_user`: Username for login to private Docker registry (default: Omitted)
+      * `registry_password`: Password for login to private Docker registry (default: Omitted)
     * `consul_container.etc_hosts`: Dict of `{<hostname>:<ip_address>}` to be added to container /etc/hosts (default: Omitted)
     * `consul_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
 
