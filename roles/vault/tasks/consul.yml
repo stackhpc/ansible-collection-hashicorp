@@ -16,8 +16,8 @@
       -bind "{{  hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
       -data-dir /consul/data
       -server
-      -bootstrap-expect "{{ groups['consul'] | length }}"
-      {% for host in groups['consul'] %}
+      -bootstrap-expect "{{ ansible_play_hosts | length }}"
+      {% for host in ansible_play_hosts %}
       {% if host != inventory_hostname %}
       -retry-join "{{ hostvars[host]['ansible_'~consul_bind_interface].ipv4.address }}"
       {% endif %}
