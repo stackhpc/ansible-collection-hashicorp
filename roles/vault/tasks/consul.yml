@@ -8,6 +8,7 @@
     volumes: "{{ _consul_volumes }}"
     comparisons:
       '*': strict
+    restart_policy: "always"
     env:
       CONSUL_BIND_INTERFACE: "{{ consul_bind_interface }}"
       CONSUL_CLIENT_INTERFACE: "{{ consul_bind_interface }}"
