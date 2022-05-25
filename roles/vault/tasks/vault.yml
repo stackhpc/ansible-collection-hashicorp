@@ -16,6 +16,14 @@
       server
   become: True
 
+- name: Copy CA into vault
+  command: "docker cp {{ '/etc/pki/ca-trust/source/anchors/rootCA.crt' if ansible_os_family == 'RedHat' else '/usr/local/share/ca-certificates/rootCA.crt' }} {{ vault_docker_name }}:/usr/local/share/ca-certificates/rootCA.crt"
+  when: copy_ca == true
+
+- name: Update trust store
+  command: "docker exec {{ vault_docker_name }} update-ca-certificates"
+  when: copy_ca == true
+
 - name: Check if vault is initialized
   uri:
     url: "{{ vault_api_addr }}/v1/sys/init"

@@ -25,6 +25,7 @@ Role variables
     * `vault_config_dir`: Directory into which to bind mount Vault configuration
   * Optional
     * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
+    * `copy_ca`: bool; copy a custom CA into the vault container 
 s (default: Omitted)
     * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
 
@@ -40,6 +41,20 @@ Example playbook (used with OpenStack Kayobe)
   gather_facts: True
   hosts: consul
   tasks:
+    - name: Copy rootCA
+      copy:
+        content: "{{ external_ca_cert }}"
+        dest: "{{ '/etc/pki/ca-trust/source/anchors/rootCA.crt' if ansible_os_family == 'RedHat' else '/usr/local/share/ca-certificates/rootCA.crt' }}"
+        mode: 0600
+        no_log: True
+      become: true
+      when: copy_ca == true
+
+    - name: update system CA
+      become: true
+      shell: "{{ 'update-ca-trust' if ansible_os_family == 'RedHat' else 'update-ca-certificates' }}"
+      when: copy_ca == true
+
     - name: Ensure /opt/kayobe/vault exists
       file:
         path: /opt/kayobe/vault
@@ -110,4 +125,4 @@ Example vault unseal playbook based on Kayobe's secrets.yml
       no_log: True
 ```
 
-NOTE: secrets_external_tls_cert/key are variables in Kayobe's secrets.yml
+NOTE: secrets_external_tls_cert/key and external_ca_cert are variables in Kayobe's secrets.yml
