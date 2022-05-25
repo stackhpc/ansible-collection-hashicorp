@@ -48,12 +48,10 @@ Example playbook (used with OpenStack Kayobe)
         mode: 0600
         no_log: True
       become: true
-      when: copy_ca == true
 
     - name: update system CA
       become: true
       shell: "{{ 'update-ca-trust' if ansible_os_family == 'RedHat' else 'update-ca-certificates' }}"
-      when: copy_ca == true
 
     - name: Ensure /opt/kayobe/vault exists
       file:
