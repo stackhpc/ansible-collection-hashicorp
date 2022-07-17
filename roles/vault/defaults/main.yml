@@ -33,6 +33,12 @@ vault_config: >
         {% else %}
         "tls_disable": "true"
         {% endif %}
+      },
+    },
+    {
+      "tcp": {
+        "address": "127.0.0.1:8200",
+        "tls_disable": "true"
       }
     }],
     "storage": {
@@ -46,6 +52,7 @@ vault_config: >
       "disable_hostname": true
     }
   }
+
 
 consul_bind_interface: ""
 consul_bind_ip: "{{ hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
@@ -69,3 +76,5 @@ consul_extra_volumes: []
 # Combined volume lists
 _vault_volumes: "{{ _vault_default_volumes + vault_extra_volumes }}"
 _consul_volumes: "{{ _consul_default_volumes + consul_extra_volumes }}"
+
+copy_self_signed_ca: false

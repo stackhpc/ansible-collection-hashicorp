@@ -1,0 +1,77 @@
+- name: "Copy Issuing bundle"
+  copy: 
+    src: "/tmp/issuing-bundle.pem"
+    dest: "~/issuing-bundle.pem"
+  become: true
+
+- name: "get root token"
+  slurp: 
+    src: "~/vault-keys.txt"
+  become: true
+  register: vault_keys_output
+
+- name: "set vault keys"
+  set_fact: 
+    vault_keys: "{{ vault_keys_output['content'] | b64decode }}"
+
+- name: "Check vault initalised"
+  shell: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault status -format json"
+  become: true
+  register: vault_status_output
+  failed_when: "vault_status_output.rc not in [ 0, 2 ]"
+
+- name: "Set status"
+  set_fact: 
+    vault_status: "{{ vault_status_output.stdout | from_json }}" 
+
+- name: "initialise vault"
+  shell: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault operator init -format yaml"
+  become: true 
+  run_once: True
+  register: vault_init_output
+  when: not vault_status.initialized 
+
+- name: "unseal vault"
+  shell: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}"
+  run_once: True
+  when: vault_status.sealed 
+  become: true
+  with_items: 
+    - 0
+    - 1
+    - 2
+
+- name: "vault login"
+  shell: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault login {{ vault_keys.root_token }}"
+  run_once: True
+  become: true
+
+- name: "Check Vault Issuing backend exists"
+  shell: "docker exec  -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault read {{ vault_intermediate_ca_name }}/cert/ca"
+  run_once: True
+  register: issuing_backend_exists
+  failed_when: "issuing_backend_exists.rc not in [ 0, 2 ]"
+
+- name: "Issuing CA Backend" 
+  block: 
+    - name: "Enable PKI Intermediate Backend"
+      run_once: True
+      shell: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault secrets enable -path={{ vault_intermediate_ca_name }} -description=\"{{ vault_intermediate_ca_name }} CA v1\" pki"
+
+    - name: "Tune Issuing Backend"
+      run_once: True
+      shell: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault secrets tune -max-lease-ttl=43830h {{ vault_intermediate_ca_name }}"
+
+    - name: "Copy Issuing pem bundle"
+      run_once: True
+      shell: docker cp ~/issuing-bundle.pem {{ vault_docker_name }}:/
+      become: true
+
+    - name: "Upload Issuing pem bundle"
+      run_once: True
+      shell: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault write {{ vault_intermediate_ca_name }}/config/ca pem_bundle=@/issuing-bundle.pem -format=json"
+
+    - name: "Create ServerRole"
+      run_once: True
+      shell: 'docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }} vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h ttl=8760h allow_localhost=true allow_any_name=true allow_ip_sans=true server_flag=true key_type=rsa key_bits=4096 enforce_hostnames=false'
+  when: issuing_backend_exists.rc == 2
