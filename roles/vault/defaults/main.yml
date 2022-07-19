@@ -33,12 +33,6 @@ vault_config: >
         {% else %}
         "tls_disable": "true"
         {% endif %}
-      },
-    },
-    {
-      "tcp": {
-        "address": "127.0.0.1:8200",
-        "tls_disable": "true"
       }
     }],
     "storage": {
@@ -52,7 +46,6 @@ vault_config: >
       "disable_hostname": true
     }
   }
-
 
 consul_bind_interface: ""
 consul_bind_ip: "{{ hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
