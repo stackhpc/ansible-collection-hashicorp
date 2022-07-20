@@ -1,6 +1,6 @@
 ---
 - name: Prepare for vault role
-  gather_facts: True
+  gather_facts: true
   hosts: consul
   tasks:
     - name: Ensure /etc/vault exists
@@ -18,4 +18,3 @@
         vault_bind_address: 127.0.0.1
         vault_api_addr: http://127.0.0.1:8200
         vault_config_dir: "/etc/vault"
-        copy_ca: false

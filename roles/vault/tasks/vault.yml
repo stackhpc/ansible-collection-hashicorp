@@ -14,12 +14,12 @@
       VAULT_LOCAL_CONFIG: "{{ vault_config | to_json }}"
     command: >
       server
-  become: True
+  become: true
 
 - name: Copy CA into vault
   command: "docker cp {{ '/etc/pki/ca-trust/source/anchors/rootCA.crt' if ansible_os_family == 'RedHat' else '/usr/local/share/ca-certificates/rootCA.crt' }} {{ vault_docker_name }}:/usr/local/share/ca-certificates/rootCA.crt"
   when: copy_self_signed_ca | bool
-  become: true 
+  become: true
 
 - name: Update trust store
   command: "docker exec {{ vault_docker_name }} update-ca-certificates"
@@ -36,7 +36,7 @@
 - name: Initialize vault
   command: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault operator init -format yaml"
   when: not vault_init_status.json.initialized
-  run_once: True
+  run_once: true
   register: vault_init_output
 
 - name: Set fact
@@ -48,7 +48,7 @@
   copy:
     dest: "~/vault-keys.txt"
     mode: "0400"
-    content: | 
+    content: |
       {{ vault_keys }}
-  become: true  
+  become: true
   when: not vault_init_status.json.initialized

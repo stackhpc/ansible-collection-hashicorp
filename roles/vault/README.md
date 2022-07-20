@@ -23,7 +23,7 @@ Role variables
     * `vault_tls_key`: Path to TLS key to use by Vault
     * `vault_tls_cert`: Path to TLS cert to use by Vault
     * `vault_config_dir`: Directory into which to bind mount Vault configuration
-    * `copy_self_signed_ca`: bool; copy a custom CA into the vault container 
+    * `copy_self_signed_ca`: bool; copy a custom CA into the vault container
 
   * Optional
     * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
@@ -44,8 +44,8 @@ Example playbook (used with OpenStack Kayobe)
 ```
 ---
 - name: Prepare for hashicorp-vault role
-  any_errors_fatal: True
-  gather_facts: True
+  any_errors_fatal: true
+  gather_facts: true
   hosts: consul
   tasks:
     - name: Copy rootCA
@@ -53,7 +53,7 @@ Example playbook (used with OpenStack Kayobe)
         content: "{{ external_ca_cert }}"
         dest: "{{ '/etc/pki/ca-trust/source/anchors/rootCA.crt' if ansible_os_family == 'RedHat' else '/usr/local/share/ca-certificates/rootCA.crt' }}"
         mode: 0600
-        no_log: True
+        no_log: true
       become: true
 
     - name: update system CA
@@ -79,12 +79,12 @@ Example playbook (used with OpenStack Kayobe)
         group: 1001
         mode: 0600
       loop: "{{ tls_files }}"
-      no_log: True
+      no_log: true
       become: true
 
 - name: Run hashicorp-vault role
-  any_errors_fatal: True
-  gather_facts: True
+  any_errors_fatal: true
+  gather_facts: true
   hosts: consul
   roles:
     - role: stackhpc.hashicorp.vault
@@ -100,8 +100,8 @@ Example post-config playbook to enable secrets engines:
 ```
 ---
 - name: Vault post deployment config
-  any_errors_fatal: True
-  gather_facts: True
+  any_errors_fatal: true
+  gather_facts: true
   hosts: vault
   tasks:
     - name: Enable vault secrets engines
@@ -110,24 +110,24 @@ Example post-config playbook to enable secrets engines:
         token: "{{ secrets_vault_keys.root_token }}"
         name: pki
         backend: pki
-      run_once: True
+      run_once: true
 ```
 
 Example vault unseal playbook based on Kayobe's secrets.yml
 ```
 ---
 - name: Unseal vault
-  any_errors_fatal: True
-  gather_facts: True
+  any_errors_fatal: true
+  gather_facts: true
   hosts: vault
   tasks:
     - name: Unseal vault
       hashivault_unseal:
         url: "https://sparrow.cf.ac.uk:8200"
         keys: "{{ item }}"
-      run_once: True
+      run_once: true
       with_items: "{{ secrets_vault_keys.unseal_keys_b64 }}"
-      no_log: True
+      no_log: true
 ```
 
 NOTE: secrets_external_tls_cert/key and external_ca_cert are variables in Kayobe's secrets.yml
