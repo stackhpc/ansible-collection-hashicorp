@@ -1,6 +1,6 @@
 ---
 - name: Prepare for vault role
-  gather_facts: True
+  gather_facts: true
   hosts: consul
   tasks:
     - name: Ensure /etc/vault exists
