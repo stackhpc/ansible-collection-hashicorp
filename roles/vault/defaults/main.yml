@@ -33,13 +33,14 @@ vault_config: >
         {% else %}
         "tls_disable": "true"
         {% endif %}
-      },
+      }{% if vault_bind_address != '127.0.0.1' %},
     },
     {
       "tcp": {
         "address": "127.0.0.1:8200",
         "tls_disable": "true"
       }
+    {% endif %}
     }],
     "storage": {
     "consul": {
