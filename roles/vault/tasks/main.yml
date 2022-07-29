@@ -1,4 +1,12 @@
 ---
+- name: Login to remote registry
+  docker_login:
+    username: "{{ consul_container.registry_user }}"
+    password: "{{ consul_container.registry_password }}"
+    registry_url: "{{ consul_container.registry_url }}"
+  when: "'registry_user' in consul_container"
+  become: true
+
 - import_tasks: prechecks.yml
 - import_tasks: consul.yml
 - import_tasks: vault.yml
