@@ -98,7 +98,7 @@
       command: >-
         docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h
-        ttl=8760h allow_localhost=trueallow_any_name=trueallow_ip_sans=trueserver_flag=true
+        ttl=8760h allow_localhost=true allow_any_name=true allow_ip_sans=true server_flag=true
         key_type=rsa key_bits=4096 enforce_hostnames=false
       changed_when: false
   when: issuing_backend_exists.rc == 2
