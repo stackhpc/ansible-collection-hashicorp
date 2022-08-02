@@ -28,8 +28,8 @@
 
 - name: "unseal vault"
   command: >-
-    "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}"
+    docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}
   when: vault_status.sealed
   become: true
   changed_when: false
@@ -40,8 +40,8 @@
 
 - name: "vault login"
   command: >-
-    "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault login {{ vault_keys.root_token }}"
+    docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    vault login {{ vault_keys.root_token }}
   changed_when: false
   become: true
 
