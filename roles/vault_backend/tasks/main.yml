@@ -13,6 +13,7 @@
   become: true
   register: vault_status_output
   failed_when: "vault_status_output.rc not in [ 0, 2 ]"
+  changed_when: false
 
 - name: "Set status"
   set_fact:
@@ -31,6 +32,7 @@
     vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}"
   when: vault_status.sealed
   become: true
+  changed_when: false
   with_items:
     - 0
     - 1
@@ -40,6 +42,7 @@
   command: >-
     "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
     vault login {{ vault_keys.root_token }}"
+  changed_when: false
   become: true
 
 - name: "Check Vault Root backend exists"
@@ -48,6 +51,8 @@
     vault read {{ vault_root_ca_name }}/cert/ca"
   register: root_backend_exists
   failed_when: "root_backend_exists.rc not in [ 0, 2 ]"
+  changed_when: false
+
 
 - name: "Check Vault Issuing backend exists"
   command: >-
@@ -55,6 +60,8 @@
     vault read {{ vault_intermediate_ca_name }}/cert/ca"
   register: issuing_backend_exists
   failed_when: "issuing_backend_exists.rc not in [ 0, 2 ]"
+  changed_when: false
+
 
 - name: "RootCA Backend"
   block:
@@ -63,11 +70,14 @@
         "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets enable -path={{ vault_root_ca_name }}
         -description=\"{{ vault_root_ca_name }} CA v1\" pki"
+      changed_when: false
+
 
     - name: "Tune Root Backend"
       command: >-
         "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets tune -max-lease-ttl=87660h {{ vault_root_ca_name }}"
+      changed_when: false
 
     - name: "Generate Cert and Priv Key"
       command: >-
@@ -75,6 +85,7 @@
         vault write {{ vault_root_ca_name }}/root/generate/internal
         common_name=\"{{ vault_root_ca_name }} CA v1\"
         ttl=87660h key_bits=4096"
+      changed_when: false
   when: root_backend_exists.rc == 2
 
 - name: "Issuing CA Backend"
@@ -84,11 +95,15 @@
         "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets enable -path={{ vault_intermediate_ca_name }}
         -description=\"{{ vault_intermediate_ca_name }} CA v1\" pki"
+      changed_when: false
+
 
     - name: "Tune Issuing Backend"
       command: >-
         "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets tune -max-lease-ttl=43830h {{ vault_intermediate_ca_name }}"
+      changed_when: false
+
 
     - name: "Generate Issuing CSR "
       command: >-
@@ -96,6 +111,7 @@
         vault write {{ vault_intermediate_ca_name }}/intermediate/generate/exported
         common_name=\"{{ vault_intermediate_ca_name }} CA v1\"
         key_bits=4096 ttl=43830h -format=json"
+      changed_when: false
       register: issuing_ca_csr_output
 
     - name: "Set exported Intermediate"
@@ -106,26 +122,32 @@
       copy:
         dest: /tmp/issuing.csr
         content: "{{ issuing_ca_csr.data.csr }}"
+        mode: '0400'
       delegate_to: localhost
 
     - name: "Create private key for export"
       copy:
         dest: /tmp/issuing.key
         content: "{{ issuing_ca_csr.data.private_key }}"
+        mode: '0400'
       delegate_to: localhost
 
     - name: "Create CSR"
       copy:
         dest: /tmp/issuing.csr
         content: "{{ issuing_ca_csr.data.csr }}"
+        mode: '0400'
 
     - name: "Create private"
       copy:
         dest: /tmp/issuing.key
         content: "{{ issuing_ca_csr.data.private_key }}"
+        mode: '0400'
+
 
     - name: "Copy CSR"
       command: docker cp /tmp/issuing.csr {{ vault_docker_name }}:/
+      changed_when: false
       become: true
 
     - name: "Sign Issuing CSR"
@@ -133,6 +155,7 @@
         "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_root_ca_name }}/root/sign-intermediate csr=@/issuing.csr
         format=pem_bundle ttl=43830h -format=json"
+      changed_when: false
       register: issuing_ca_crt_output
 
     - name: "Set CSR"
@@ -146,6 +169,8 @@
           {{ issuing_ca_crt.data.certificate }}
           {{ issuing_ca_crt.data.issuing_ca }}
           {{ issuing_ca_csr.data.private_key }}
+        mode: '0400'
+
 
     - name: "Create intermediate pem bundle for export"
       copy:
@@ -154,6 +179,7 @@
           {{ issuing_ca_crt.data.certificate }}
           {{ issuing_ca_crt.data.issuing_ca }}
           {{ issuing_ca_csr.data.private_key }}
+        mode: '0400'
       delegate_to: localhost
 
     - name: "Create RootCA for export"
@@ -161,10 +187,12 @@
         dest: /tmp/rootCA.crt
         content: |
           {{ issuing_ca_crt.data.issuing_ca }}
+        mode: '0400'
       delegate_to: localhost
 
-    - name: "Copy Cert"
+    - name: "Copy Issuing Bundle"
       command: docker cp /tmp/issuing-bundle.pem vault:/
+      changed_when: false
       become: true
 
     - name: "Set Issuing CRT"
@@ -172,6 +200,7 @@
         "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/intermediate/set-signed certificate=@/issuing-bundle.pem
         format=pem_bundle ttl=43830h"
+      changed_when: false
 
     - name: "Create ServerRole"
       command: >-
@@ -179,12 +208,15 @@
         vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h ttl=8760h allow_localhost=true
         allow_any_name=true allow_ip_sans=true server_flag=true key_type=rsa key_bits=4096 country="GB" locality="England"
         organization="StackHPC" ou="ops"'
+      changed_when: false
+
 
     - name: Generate the certificates
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' "{{ vault_docker_name }}"
         vault write "{{ vault_intermediate_ca_name }}"/issue/ServerCert common_name="vault"
         ip_sans="{{ kolla_internal_vip_address }}" -format=json
+      changed_when: false
       register: certs_and_keys_output
 
     - name: "Set vault cert and keys"
@@ -197,11 +229,13 @@
         content: |
             {{ vault_cert_and_key.data.certificate }}
             {{ vault_cert_and_key.data.issuing_ca }}
+        mode: '0400'
       delegate_to: localhost
 
     - name: "Create vault private key for export"
       copy:
         dest: /tmp/vault.key
         content: "{{ vault_cert_and_key.data.private_key }}"
+        mode: '0400'
       delegate_to: localhost
   when: issuing_backend_exists.rc == 2

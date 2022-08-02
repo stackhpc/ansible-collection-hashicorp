@@ -17,7 +17,9 @@
   become: true
 
 - name: Copy CA into vault
-  command: "docker cp {{ '/etc/pki/ca-trust/source/anchors/rootCA.crt' if ansible_os_family == 'RedHat' else '/usr/local/share/ca-certificates/rootCA.crt' }} {{ vault_docker_name }}:/usr/local/share/ca-certificates/rootCA.crt"
+  command: >-
+    "docker cp {{ '/etc/pki/ca-trust/source/anchors/rootCA.crt' if ansible_os_family == 'RedHat' else '/usr/local/share/ca-certificates/rootCA.crt' }}
+    {{ vault_docker_name }}:/usr/local/share/ca-certificates/rootCA.crt"
   when: copy_self_signed_ca | bool
   become: true
 

@@ -2,6 +2,17 @@
 - name: Prepare for vault role
   gather_facts: true
   hosts: consul
+  vars:
+    consul_bind_interface: lo
+    consul_bind_ip: 127.0.0.1
+    consul_vip_address: 127.0.0.1
+    vault_bind_address: 127.0.0.1
+    vault_api_addr: http://127.0.0.1:8200
+    vault_config_dir: "/etc/vault"
+    vault_root_ca_name: "ROOT_CA"
+    vault_intermediate_ca_name: "INT_CA"
+    copy_self_signed_ca: false
+
   tasks:
     - name: Ensure /etc/vault exists
       file:
@@ -9,12 +20,9 @@
         state: directory
       become: true
 
-    - include_role:
-        name: vault
-      vars:
-        consul_bind_interface: lo
-        consul_bind_ip: 127.0.0.1
-        consul_vip_address: 127.0.0.1
-        vault_bind_address: 127.0.0.1
-        vault_api_addr: http://127.0.0.1:8200
-        vault_config_dir: "/etc/vault"
+  roles:
+    - role: stackhpc.hashicorp.vault
+    - role: stackhpc.hashicorp.vault_backend
+
+
+
