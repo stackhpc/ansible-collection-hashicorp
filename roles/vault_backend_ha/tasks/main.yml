@@ -35,8 +35,8 @@
 
 - name: "unseal vault"
   command: >-
-    "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}"
+    docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}
   run_once: true
   when: vault_status.sealed
   become: true
@@ -47,16 +47,16 @@
 
 - name: "vault login"
   command: >-
-    "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault login {{ vault_keys.root_token }}"
+    docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    vault login {{ vault_keys.root_token }}
   changed_when: false
   run_once: true
   become: true
 
 - name: "Check Vault Issuing backend exists"
   command: >-
-    "docker exec  -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault read {{ vault_intermediate_ca_name }}/cert/ca"
+    docker exec  -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    vault read {{ vault_intermediate_ca_name }}/cert/ca
   run_once: true
   register: issuing_backend_exists
   changed_when: false
@@ -67,16 +67,16 @@
     - name: "Enable PKI Intermediate Backend"
       run_once: true
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets enable -path={{ vault_intermediate_ca_name }}
-        -description=\"{{ vault_intermediate_ca_name }} CA v1\" pki"
+        -description=\"{{ vault_intermediate_ca_name }} CA v1\" pki
       changed_when: false
 
     - name: "Tune Issuing Backend"
       run_once: true
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-        vault secrets tune -max-lease-ttl=43830h {{ vault_intermediate_ca_name }}"
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        vault secrets tune -max-lease-ttl=43830h {{ vault_intermediate_ca_name }}
       changed_when: false
 
     - name: "Copy Issuing pem bundle"
@@ -88,17 +88,17 @@
     - name: "Upload Issuing pem bundle"
       run_once: true
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/config/ca pem_bundle=@/issuing-bundle.pem
-        -format=json"
+        -format=json
       changed_when: false
 
     - name: "Create ServerRole"
       run_once: true
       command: >-
-        'docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }}
+        docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h
         ttl=8760h allow_localhost=trueallow_any_name=trueallow_ip_sans=trueserver_flag=true
-        key_type=rsa key_bits=4096 enforce_hostnames=false'
+        key_type=rsa key_bits=4096 enforce_hostnames=false
       changed_when: false
   when: issuing_backend_exists.rc == 2

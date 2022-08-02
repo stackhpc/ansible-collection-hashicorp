@@ -47,8 +47,8 @@
 
 - name: "Check Vault Root backend exists"
   command: >-
-    "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault read {{ vault_root_ca_name }}/cert/ca"
+    docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    vault read {{ vault_root_ca_name }}/cert/ca
   register: root_backend_exists
   failed_when: "root_backend_exists.rc not in [ 0, 2 ]"
   changed_when: false
@@ -56,8 +56,8 @@
 
 - name: "Check Vault Issuing backend exists"
   command: >-
-    "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault read {{ vault_intermediate_ca_name }}/cert/ca"
+    docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    vault read {{ vault_intermediate_ca_name }}/cert/ca
   register: issuing_backend_exists
   failed_when: "issuing_backend_exists.rc not in [ 0, 2 ]"
   changed_when: false
@@ -67,24 +67,24 @@
   block:
     - name: "Enable PKI Root Backend"
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets enable -path={{ vault_root_ca_name }}
-        -description=\"{{ vault_root_ca_name }} CA v1\" pki"
+        -description=\"{{ vault_root_ca_name }} CA v1\" pki
       changed_when: false
 
 
     - name: "Tune Root Backend"
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-        vault secrets tune -max-lease-ttl=87660h {{ vault_root_ca_name }}"
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        vault secrets tune -max-lease-ttl=87660h {{ vault_root_ca_name }}
       changed_when: false
 
     - name: "Generate Cert and Priv Key"
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_root_ca_name }}/root/generate/internal
         common_name=\"{{ vault_root_ca_name }} CA v1\"
-        ttl=87660h key_bits=4096"
+        ttl=87660h key_bits=4096
       changed_when: false
   when: root_backend_exists.rc == 2
 
@@ -92,25 +92,25 @@
   block:
     - name: "Enable PKI Intermediate Backend"
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets enable -path={{ vault_intermediate_ca_name }}
-        -description=\"{{ vault_intermediate_ca_name }} CA v1\" pki"
+        -description=\"{{ vault_intermediate_ca_name }} CA v1\" pki
       changed_when: false
 
 
     - name: "Tune Issuing Backend"
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-        vault secrets tune -max-lease-ttl=43830h {{ vault_intermediate_ca_name }}"
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        vault secrets tune -max-lease-ttl=43830h {{ vault_intermediate_ca_name }}
       changed_when: false
 
 
     - name: "Generate Issuing CSR "
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/intermediate/generate/exported
         common_name=\"{{ vault_intermediate_ca_name }} CA v1\"
-        key_bits=4096 ttl=43830h -format=json"
+        key_bits=4096 ttl=43830h -format=json
       changed_when: false
       register: issuing_ca_csr_output
 
@@ -152,9 +152,9 @@
 
     - name: "Sign Issuing CSR"
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_root_ca_name }}/root/sign-intermediate csr=@/issuing.csr
-        format=pem_bundle ttl=43830h -format=json"
+        format=pem_bundle ttl=43830h -format=json
       changed_when: false
       register: issuing_ca_crt_output
 
@@ -197,17 +197,17 @@
 
     - name: "Set Issuing CRT"
       command: >-
-        "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+        docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/intermediate/set-signed certificate=@/issuing-bundle.pem
-        format=pem_bundle ttl=43830h"
+        format=pem_bundle ttl=43830h
       changed_when: false
 
     - name: "Create ServerRole"
       command: >-
-        'docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }}
+        docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h ttl=8760h allow_localhost=true
         allow_any_name=true allow_ip_sans=true server_flag=true key_type=rsa key_bits=4096 country="GB" locality="England"
-        organization="StackHPC" ou="ops"'
+        organization="StackHPC" ou="ops"
       changed_when: false
 
 
