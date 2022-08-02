@@ -13,7 +13,7 @@
     vault_intermediate_ca_name: "INT_CA"
     copy_self_signed_ca: false
 
-  tasks:
+  pre_tasks:
     - name: Ensure /etc/vault exists
       file:
         path: /etc/vault
