@@ -6,7 +6,6 @@ Role variables
 * Consul
   * Mandatory
     * `consul_bind_interface`: Which interface should be used for Consul
-    * `consul_vip_address`: Under which IP address consul should be available (this role does not deploy keepalived)
   * Optional
     * `consul_docker_name`: Docker - under which name to run the Consul image (default: "consul")
     * `consul_docker_image`: Docker image for Consul (default: "consul")
@@ -70,7 +69,6 @@ Example playbook (used with OpenStack Kayobe)
     - role: stackhpc.hashicorp.vault
       consul_bind_interface: "{{ internal_net_interface }}"
       consul_bind_ip: "{{ internal_net_ips[ansible_hostname] }}"
-      consul_vip_address: "{{ internal_net_vip_address }}"
       vault_bind_address: "{{ external_net_ips[ansible_hostname] }}"
       vault_api_addr: "https://{{ external_net_fqdn }}:8200"
       vault_config_dir: "/opt/kayobe/vault"
