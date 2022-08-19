@@ -19,13 +19,13 @@ Role variables
     * `vault_cluster_name`: Vault cluster name (e.g. "prod_cluster")
     * `vault_api_addr`: Vault [API addr](https://www.vaultproject.io/docs/configuration#api_addr) - Full URL including protocol and port (e.g. "http://127.0.0.1:8200")
     * `vault_bind_address`: Which IP address should Vault bind to
-    * `vault_tls_key`: Path to TLS key to use by Vault
-    * `vault_tls_cert`: Path to TLS cert to use by Vault
     * `vault_config_dir`: Directory into which to bind mount Vault configuration
   * Optional
     * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
 s (default: Omitted)
     * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
+    * `vault_tls_key`: Path to TLS key to use by Vault
+    * `vault_tls_cert`: Path to TLS cert to use by Vault
 
 
 
