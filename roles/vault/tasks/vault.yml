@@ -25,17 +25,15 @@
   until: vault_init_status.status == 200
 
 - name: Initialize vault
-  command: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault operator init -format yaml"
-  when: not vault_init_status.json.initialized
+  hashivault_init:
+    url: "{{ vault_api_addr }}"
   run_once: True
-  register: vault_init_output
-
-- name: Set fact
-  set_fact:
-    vault_keys: "{{ vault_init_output.stdout | from_yaml }}"
+  no_log: True
   when: not vault_init_status.json.initialized
+  register: vault_init_output
 
 - name: Print vault keys
   debug:
-    var: vault_keys
+    var: vault_init_output
   when: not vault_init_status.json.initialized
+
