@@ -30,10 +30,10 @@
   run_once: True
   no_log: True
   when: not vault_init_status.json.initialized
-  register: vault_init_output
+  register: vault_keys
 
 - name: Print vault keys
   debug:
-    var: vault_init_output
+    var: vault_keys
   when: not vault_init_status.json.initialized
 
