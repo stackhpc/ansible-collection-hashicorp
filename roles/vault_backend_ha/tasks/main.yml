@@ -5,49 +5,10 @@
     mode: '0400'
   become: true
 
-- name: "get root token"
-  slurp:
-    src: "~/vault-keys.txt"
-  become: true
-  register: vault_keys_output
-
-- name: "set vault keys"
-  set_fact:
-    vault_keys: "{{ vault_keys_output['content'] | b64decode }}"
-
-- name: "Check vault initalised"
-  command: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault status -format json"
-  become: true
-  register: vault_status_output
-  changed_when: false
-  failed_when: "vault_status_output.rc not in [ 0, 2 ]"
-
-- name: "Set status"
-  set_fact:
-    vault_status: "{{ vault_status_output.stdout | from_json }}"
-
-- name: "initialise vault"
-  command: "docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }} vault operator init -format yaml"
-  become: true
-  run_once: true
-  register: vault_init_output
-  when: not vault_status.initialized
-
-- name: "unseal vault"
-  command: >-
-    docker exec -e 'VAULT_ADDR=https://{{ vault_bind_address }}:8200' {{ vault_docker_name }}
-    vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}
-  when: vault_status.sealed
-  become: true
-  with_items:
-    - 0
-    - 1
-    - 2
-
 - name: "vault login"
   command: >-
     docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
-    vault login {{ vault_keys.root_token }}
+    vault login {{ vault_token }}
   changed_when: false
   run_once: true
   become: true
