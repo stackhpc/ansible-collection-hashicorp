@@ -103,8 +103,8 @@ Example playbook (used with OpenStack Kayobe)
   roles:
     - role: stackhpc.hashicorp.vault
       consul_bind_interface: "{{ internal_net_interface }}"
-      consul_bind_ip: "{{ internal_net_ips[ansible_hostname] }}"
-      vault_bind_address: "{{ external_net_ips[ansible_hostname] }}"
+      consul_bind_ip: "{{ internal_net_ips[inventory_hostname] }}"
+      vault_bind_address: "{{ external_net_ips[inventory_hostname] }}"
       vault_api_addr: "https://{{ external_net_fqdn }}:8200"
       vault_config_dir: "/opt/kayobe/vault"
 ```
