@@ -35,9 +35,8 @@
 
 - name: "unseal vault"
   command: >-
-    docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
+    docker exec -e 'VAULT_ADDR=https://{{ vault_bind_address }}:8200' {{ vault_docker_name }}
     vault operator unseal {{ vault_keys.unseal_keys_b64[item] }}
-  run_once: true
   when: vault_status.sealed
   become: true
   with_items:
