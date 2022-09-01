@@ -31,8 +31,38 @@ s (default: Omitted)
     * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
     * `vault_tls_key`: Path to TLS key to use by Vault
     * `vault_tls_cert`: Path to TLS cert to use by Vault
+    * `vault_log_keys`: Whether to log the root token and unseal keys in the Ansible output. Default `false`
+    * `vault_set_keys_fact`: Whether to set a `vault_keys` fact containing the root token and unseal keys. Default `false`
+    * `vault_write_keys_file`: Whether to write the root token and unseal keys to a file. Default `false`
+    * `vault_write_keys_file_host`: Host on which to write root token and unseal keys. Default `localhost`
+    * `vault_write_keys_file_path`: Path of file to write root token and unseal keys. Default `vault-keys.json`
 
+Root and unseal keys
+--------------------
 
+After Vault has been initialised, a root token and a set of unseal keys are emitted.
+It is very important to store these keys safely and securely.
+This role provides several mechanisms for extracting the root token and unseal keys:
+
+1. Print to Ansible log output (`vault_log_keys`)
+1. Set a `vault_keys` fact (`vault_set_keys_fact`)
+1. Write to a file (`vault_write_keys_file`)
+
+In each case, the output will contain the following:
+
+```json
+{
+  "keys": [
+    "...",
+    "..."
+  ],
+  "keys_base64": [
+    "...",
+    "..."
+  ],
+  "root_token": "..."
+}
+```
 
 Example playbook (used with OpenStack Kayobe)
 ---------------------------------------------
