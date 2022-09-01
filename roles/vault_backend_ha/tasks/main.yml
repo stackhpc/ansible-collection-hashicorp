@@ -69,7 +69,7 @@
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets enable -path={{ vault_intermediate_ca_name }}
-        -description=\"{{ vault_intermediate_ca_name }} CA v1\" pki
+        -description="{{ vault_intermediate_ca_name }} CA v1" pki
       changed_when: false
 
     - name: "Tune Issuing Backend"
