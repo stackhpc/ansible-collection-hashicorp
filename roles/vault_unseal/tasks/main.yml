@@ -1,0 +1,5 @@
+---
+- name: Unseal Vault
+  hashivault_unseal:
+    url: "{{ vault_api_addr }}"
+    keys: "{{ vault_unseal_keys | join(' ') }}"

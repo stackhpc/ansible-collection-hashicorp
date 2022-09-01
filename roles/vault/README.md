@@ -126,21 +126,4 @@ Example post-config playbook to enable secrets engines:
       run_once: True
 ```
 
-Example vault unseal playbook based on Kayobe's secrets.yml
-```
----
-- name: Unseal vault
-  any_errors_fatal: True
-  gather_facts: True
-  hosts: vault
-  tasks:
-    - name: Unseal vault
-      hashivault_unseal:
-        url: "https://sparrow.cf.ac.uk:8200"
-        keys: "{{ item }}"
-      run_once: True
-      with_items: "{{ secrets_vault_keys.unseal_keys_b64 }}"
-      no_log: True
-```
-
 NOTE: secrets_external_tls_cert/key are variables in Kayobe's secrets.yml

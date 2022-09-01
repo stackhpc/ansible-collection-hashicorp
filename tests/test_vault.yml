@@ -23,3 +23,9 @@
     # Idempotence test
     - include_role:
         name: vault
+
+    - name: Unseal vault
+      import_role:
+        name: vault_unseal
+      vars:
+        vault_keys: "{{ vault_keys.keys_base64 }}"
