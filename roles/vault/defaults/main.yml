@@ -68,3 +68,16 @@ consul_extra_volumes: []
 # Combined volume lists
 _vault_volumes: "{{ _vault_default_volumes + vault_extra_volumes }}"
 _consul_volumes: "{{ _consul_default_volumes + consul_extra_volumes }}"
+
+# Whether to log the root token and unseal keys in the Ansible output.
+vault_log_keys: false
+
+# Whether to set a vault_keys fact containing the root token and unseal keys.
+vault_set_keys_fact: false
+
+# Whether to write the root token and unseal keys to a file.
+vault_write_keys_file: false
+# Host on which to write root token and unseal keys.
+vault_write_keys_file_host: localhost
+# Path of file to write root token and unseal keys.
+vault_write_keys_file_path: vault-keys.json
