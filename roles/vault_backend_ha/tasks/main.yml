@@ -62,3 +62,10 @@
         key_type=rsa key_bits=4096 enforce_hostnames=false
       changed_when: false
   when: issuing_backend_exists.rc == 2
+
+- name: "vault logout"
+  command: >-
+    docker exec {{ vault_docker_name }}
+    rm -f ~/.vault-token
+  changed_when: false
+  become: true
