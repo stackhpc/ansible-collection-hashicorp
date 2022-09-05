@@ -3,7 +3,11 @@ This role deploys and initializes Hashicorp Vault with Consul backend
 Requirements
 ------------
 
-``ansible-modules-hashivault`` PyPI package installed
+`ansible-modules-hashivault` Python package installed on the Ansible control host
+`hvac` Python package installed on the remote hosts
+
+Note that since version `4.6.4`, `ansible-modules-hashivault` requires
+`ansible>4`.
 
 Role variables
 --------------
