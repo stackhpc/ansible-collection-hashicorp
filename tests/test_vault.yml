@@ -4,25 +4,35 @@
   hosts: consul
   vars:
     consul_bind_interface: lo
-    consul_bind_ip: 127.0.0.1
-    consul_vip_address: 127.0.0.1
     vault_bind_address: 127.0.0.1
     vault_api_addr: http://127.0.0.1:8200
     vault_config_dir: "/etc/vault"
-    vault_root_ca_name: "ROOT_CA"
-    vault_intermediate_ca_name: "INT_CA"
-    copy_self_signed_ca: false
-
-  pre_tasks:
+    vault_log_keys: true
+    vault_set_keys_fact: true
+    vault_write_keys_file: true
+  tasks:
     - name: Ensure /etc/vault exists
       file:
         path: /etc/vault
         state: directory
       become: true
 
-  roles:
-    - role: stackhpc.hashicorp.vault
-    - role: stackhpc.hashicorp.vault_backend
+    - include_role:
+        name: vault
 
+    # Idempotence test
+    - include_role:
+        name: vault
 
+    - name: Unseal vault
+      import_role:
+        name: vault_unseal
+      vars:
+        vault_keys: "{{ vault_keys.keys_base64 }}"
 
+    - include_role:
+        name: vault_backend
+      vars:
+        vault_root_ca_name: "ROOT_CA"
+        vault_intermediate_ca_name: "INT_CA"
+        copy_self_signed_ca: false

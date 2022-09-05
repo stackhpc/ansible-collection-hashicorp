@@ -14,13 +14,13 @@
       CONSUL_CLIENT_INTERFACE: "{{ consul_bind_interface }}"
     command: >
       consul agent
-      -bind "{{  hostvars[inventory_hostname]['ansible_facts'][consul_bind_interface].ipv4.address }}"
+      -bind "{{  hostvars[inventory_hostname].ansible_facts[consul_bind_interface].ipv4.address }}"
       -data-dir /consul/data
       -server
       -bootstrap-expect "{{ ansible_play_hosts | length }}"
       {% for host in ansible_play_hosts %}
       {% if host != inventory_hostname %}
-      -retry-join "{{ hostvars[host]['ansible_facts'][consul_bind_interface].ipv4.address }}"
+      -retry-join "{{ hostvars[host].ansible_facts[consul_bind_interface].ipv4.address }}"
       {% endif %}
       {% endfor %}
   become: true

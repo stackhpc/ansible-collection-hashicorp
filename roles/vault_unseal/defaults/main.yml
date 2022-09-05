@@ -1,0 +1,7 @@
+---
+# Allow vault_vip_url and vault_vip_address for backwards compatibility.
+vault_vip_address: "{{ vault_vip_url | default('') }}"
+vault_api_addr: "{{ ('https://' ~ vault_vip_address ~ ':8200') if vault_vip_address else '' }}"
+
+# List of unseal key shards.
+vault_unseal_keys: []

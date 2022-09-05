@@ -1,5 +1,10 @@
 # Example playbook
 
+* vault backend and backend HA
+  * Mandatory
+    * `vault_root_ca_name`: The common name for the RootCA
+    * `vault_intermediate_ca_name`: The common name for the intermediateCA
+
 This playbook will create vault self-signed certificates for vault running in HA mode on 3 nodes.
 
 It uses a loadbalancer IP address. it can also use an FQDN by replacing ip_sans with alt_names on the generate certificates task.

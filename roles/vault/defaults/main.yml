@@ -28,8 +28,8 @@ vault_config: >
         "address": "{{ vault_bind_address }}:8200",
         {% if vault_tls_key and vault_tls_cert %}
         "tls_min_version": "tls12",
-        "tls_key_file": "/vault/config/tls.key",
-        "tls_cert_file": "/vault/config/tls.cert"
+        "tls_key_file": "/vault/config/{{ vault_tls_key }}",
+        "tls_cert_file": "/vault/config/{{ vault_tls_cert }}"
         {% else %}
         "tls_disable": "true"
         {% endif %}
@@ -56,8 +56,7 @@ vault_config: >
 
 
 consul_bind_interface: ""
-consul_bind_ip: "{{ hostvars[inventory_hostname]['ansible_'~consul_bind_interface].ipv4.address }}"
-consul_vip_address: ""
+consul_bind_ip: "{{ hostvars[inventory_hostname].ansible_facts[consul_bind_interface].ipv4.address }}"
 
 # Docker options
 vault_container: {}
@@ -77,5 +76,18 @@ consul_extra_volumes: []
 # Combined volume lists
 _vault_volumes: "{{ _vault_default_volumes + vault_extra_volumes }}"
 _consul_volumes: "{{ _consul_default_volumes + consul_extra_volumes }}"
+
+# Whether to log the root token and unseal keys in the Ansible output.
+vault_log_keys: false
+
+# Whether to set a vault_keys fact containing the root token and unseal keys.
+vault_set_keys_fact: false
+
+# Whether to write the root token and unseal keys to a file.
+vault_write_keys_file: false
+# Host on which to write root token and unseal keys.
+vault_write_keys_file_host: localhost
+# Path of file to write root token and unseal keys.
+vault_write_keys_file_path: vault-keys.json
 
 copy_self_signed_ca: false
