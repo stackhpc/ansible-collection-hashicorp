@@ -66,9 +66,11 @@
     - name: "Create ServerCert role"
       command: >-
         docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }}
-        vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h
-        ttl=8760h allow_localhost=true allow_any_name=true allow_ip_sans=true server_flag=true
-        key_type=rsa key_bits=4096 enforce_hostnames=false
+        vault write {{ vault_intermediate_ca_name }}/roles/ServerCert
+        max_ttl=8760h ttl=8760h
+        allow_ip_sans=true require_cn=false server_flag=true
+        key_type=rsa key_bits=4096
+        country='NL' locality='Groningen' organization='RUG' ou='HPC'
       changed_when: false
   run_once: true
   when: issuing_backend_exists.rc == 2
