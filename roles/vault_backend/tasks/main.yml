@@ -31,7 +31,7 @@
         -description='{{ vault_root_ca_name }} CA v1' pki
       changed_when: false
 
-
+    # 10 years
     - name: "Tune Root Backend"
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
@@ -56,7 +56,7 @@
         -description='{{ vault_intermediate_ca_name }} CA v1' pki
       changed_when: false
 
-
+    # 5 years
     - name: "Tune Issuing Backend"
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
@@ -97,17 +97,15 @@
         content: "{{ issuing_ca_csr.data.csr }}"
         mode: '0400'
 
-    - name: "Create private"
-      copy:
-        dest: /tmp/issuing.key
-        content: "{{ issuing_ca_csr.data.private_key }}"
-        mode: '0400'
-
-
     - name: "Copy CSR"
       command: docker cp /tmp/issuing.csr {{ vault_docker_name }}:/
       changed_when: false
       become: true
+
+    - name: "Delete CSR"
+      file:
+        path: /tmp/issuing.csr
+        state: absent
 
     - name: "Sign Issuing CSR"
       command: >-
@@ -116,6 +114,13 @@
         format=pem_bundle ttl=43830h -format=json
       changed_when: false
       register: issuing_ca_crt_output
+
+    - name: "Delete CSR in container"
+      command: >-
+        docker exec {{ vault_docker_name }}
+        rm -f /issuing.csr
+      changed_when: false
+      become: true
 
     - name: "Set CSR"
       set_fact:
@@ -154,6 +159,11 @@
       changed_when: false
       become: true
 
+    - name: "Delete Issuing Bundle"
+      file:
+        path: /tmp/issuing-bundle.pem
+        state: absent
+
     - name: "Set Issuing CRT"
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
@@ -161,7 +171,15 @@
         format=pem_bundle ttl=43830h
       changed_when: false
 
-    - name: "Create ServerRole"
+    - name: "Delete Issuing Bundle in container"
+      command: >-
+        docker exec {{ vault_docker_name }}
+        rm -f /issuing-bundle.pem
+      changed_when: false
+      become: true
+
+    # Max 1 year
+    - name: "Create ServerCert role"
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h ttl=8760h allow_localhost=true
