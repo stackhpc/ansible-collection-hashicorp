@@ -5,7 +5,11 @@ Note that in a Vault cluster, each Vault server must be unsealed individually.
 Requirements
 ------------
 
-``ansible-modules-hashivault`` PyPI package installed
+`ansible-modules-hashivault` Python package installed on the Ansible control host
+`hvac` Python package installed on the remote hosts
+
+Note that since version `4.6.4`, `ansible-modules-hashivault` requires
+`ansible>4`.
 
 Role variables
 --------------
