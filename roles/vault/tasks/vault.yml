@@ -40,6 +40,7 @@
     - name: Initialize vault
       hashivault_init:
         url: "{{ vault_api_addr }}"
+        ca_cert: "{{ '/usr/local/share/ca-certificates/rootCA.crt' if copy_self_signed_ca | bool else omit }}"
       no_log: true
       register: vault_keys_result
 

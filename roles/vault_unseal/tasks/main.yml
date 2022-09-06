@@ -2,4 +2,5 @@
 - name: Unseal Vault
   hashivault_unseal:
     url: "{{ vault_api_addr }}"
+    ca_cert: "{{ '/usr/local/share/ca-certificates/rootCA.crt' if copy_self_signed_ca | bool else omit }}"
     keys: "{{ vault_unseal_keys | join(' ') }}"
