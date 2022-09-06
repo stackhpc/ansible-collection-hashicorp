@@ -1,10 +1,3 @@
-- name: "Copy Issuing bundle"
-  copy:
-    src: "/tmp/issuing-bundle.pem"
-    dest: "~/issuing-bundle.pem"
-    mode: '0400'
-  become: true
-
 - name: "vault login"
   command: >-
     docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
@@ -24,43 +17,60 @@
 
 - name: "Issuing CA Backend"
   block:
+    - name: "Copy Issuing bundle"
+      copy:
+        src: "/tmp/issuing-bundle.pem"
+        dest: "~/issuing-bundle.pem"
+        mode: '0400'
+      become: true
+
     - name: "Enable PKI Intermediate Backend"
-      run_once: true
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets enable -path={{ vault_intermediate_ca_name }}
         -description="{{ vault_intermediate_ca_name }} CA v1" pki
       changed_when: false
 
+    # 5 years
     - name: "Tune Issuing Backend"
-      run_once: true
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault secrets tune -max-lease-ttl=43830h {{ vault_intermediate_ca_name }}
       changed_when: false
 
     - name: "Copy Issuing pem bundle"
-      run_once: true
       command: docker cp ~/issuing-bundle.pem {{ vault_docker_name }}:/
       changed_when: false
       become: true
 
+    - name: "Delete Issuing Bundle"
+      file:
+        path: "~/issuing-bundle.pem"
+        state: absent
+      become: true
+
     - name: "Upload Issuing pem bundle"
-      run_once: true
       command: >-
         docker exec -e 'VAULT_ADDR={{ vault_api_addr }}' {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/config/ca pem_bundle=@/issuing-bundle.pem
         -format=json
       changed_when: false
 
-    - name: "Create ServerRole"
-      run_once: true
+    - name: "Delete Issuing Bundle in container"
+      command: >-
+        docker exec {{ vault_docker_name }}
+        rm -f /issuing-bundle.pem
+      changed_when: false
+      become: true
+
+    - name: "Create ServerCert role"
       command: >-
         docker exec -e "VAULT_ADDR={{ vault_api_addr }}" {{ vault_docker_name }}
         vault write {{ vault_intermediate_ca_name }}/roles/ServerCert max_ttl=8760h
         ttl=8760h allow_localhost=true allow_any_name=true allow_ip_sans=true server_flag=true
         key_type=rsa key_bits=4096 enforce_hostnames=false
       changed_when: false
+  run_once: true
   when: issuing_backend_exists.rc == 2
 
 - name: "vault logout"
@@ -68,4 +78,5 @@
     docker exec {{ vault_docker_name }}
     rm -f ~/.vault-token
   changed_when: false
+  run_once: true
   become: true
