@@ -1,5 +1,17 @@
 ---
 - name: Unseal Vault
   hashivault_unseal:
-    url: "{{ vault_api_addr }}"
+    authtype: "{{ vault_unseal_authtype | default(omit) }}"
+    aws_header: "{{ vault_unseal_aws_header | default(omit) }}"
+    ca_cert: "{{ vault_unseal_ca_cert | default(omit) }}"
+    ca_path: "{{ vault_unseal_ca_path | default(omit) }}"
+    client_cert: "{{ vault_unseal_client_cert | default(omit) }}"
+    client_key: "{{ vault_unseal_client_key | default(omit) }}"
     keys: "{{ vault_unseal_keys | join(' ') }}"
+    login_mount_point: "{{ vault_unseal_login_mount_point | default(omit) }}"
+    namespace: "{{ vault_unseal_namespace | default(omit) }}"
+    password: "{{ vault_unseal_password | default(omit) }}"
+    token: "{{ vault_unseal_token | default(omit) }}"
+    url: "{{ vault_api_addr }}"
+    username: "{{ vault_unseal_username | default(omit) }}"
+    verify: "{{ vault_unseal_verify | default(omit) }}"
