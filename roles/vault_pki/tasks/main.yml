@@ -1,0 +1,10 @@
+---
+- include_tasks: "prechecks.yml"
+- include_tasks: "root.yml"
+  when: vault_pki_root_create | bool
+
+- include_tasks: "intermediate.yml"
+  when: vault_pki_intermediate_create | bool
+
+- include_tasks: "roles.yml"
+  when: vault_pki_intermediate_roles | length > 0

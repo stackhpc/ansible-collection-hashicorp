@@ -1,0 +1,12 @@
+---
+vault_pki_root_create: True
+vault_pki_root_ca_name: ""
+vault_pki_root_ca_common_name: "{{ vault_pki_root_ca_name }}"
+
+vault_pki_intermediate_create: True
+vault_pki_intermediate_import: False
+vault_pki_intermediate_ca_name: ""
+vault_pki_intermediate_ca_common_name: "{{ vault_pki_intermediate_ca_name }}"
+vault_pki_intermediate_ca_type: "internal"
+
+vault_pki_intermediate_roles: {}

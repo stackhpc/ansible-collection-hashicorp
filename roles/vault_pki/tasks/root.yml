@@ -1,0 +1,20 @@
+---
+- name: "Ensure Vault RootCA PKI backend exists"
+  hashivault_secret_engine:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    name: "{{ vault_pki_root_ca_name }}"
+    description: "{{ vault_pki_root_ca_name }} CA"
+    backend: "pki"
+
+- name: "Generate Vault Root CA cert and key"
+  hashivault_pki_ca:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    mount_point: "{{ vault_pki_root_ca_name }}"
+    type: "internal"
+    common_name: "{{ vault_pki_root_ca_common_name }}"
+    kind: "root"
+    config:
+      key_bits: 4096
+      ttl: "43830h"
