@@ -1,10 +1,21 @@
 ---
-- include_tasks: "prechecks.yml"
-- include_tasks: "root.yml"
+- name: "Prechecks"
+  include_tasks: "prechecks.yml"
+
+- name: "Generate Root"
+  include_tasks: "root.yml"
   when: vault_pki_root_create | bool
 
-- include_tasks: "intermediate.yml"
+- name: "Generate Intermediate"
+  include_tasks: "intermediate.yml"
   when: vault_pki_intermediate_create | bool
 
-- include_tasks: "roles.yml"
+- name: "Define Roles"
+  include_tasks: "roles.yml"
   when: vault_pki_intermediate_roles | length > 0
+
+- name: "Generate Certificates"
+  include_tasks: "create_cert.yml"
+  when:
+    - vault_pki_generate_certificates | bool
+    - vault_pki_certificate_subject | length > 0

@@ -5,5 +5,5 @@
     token: "{{ vault_token }}"
     mount_point: "{{ vault_pki_intermediate_ca_name }}"
     name: "{{ item.name }}"
-    config: "{{ item.config }}" 
+    config: "{{ item.config }}"
   loop: "{{ vault_pki_intermediate_roles }}"

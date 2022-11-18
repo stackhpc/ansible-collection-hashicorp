@@ -14,7 +14,7 @@
       VAULT_LOCAL_CONFIG: "{{ vault_config | to_json }}"
     command: >
       server
-  become: True
+  become: true
 
 - name: Check if vault is initialized
   uri:
@@ -25,7 +25,8 @@
   run_once: true
   until: vault_init_status.status == 200
 
-- block:
+- name: "Initialize vault"
+  block:
     - name: Initialize vault
       hashivault_init:
         url: "{{ vault_api_addr }}"

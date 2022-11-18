@@ -14,12 +14,13 @@
         url: "{{ vault_api_addr }}"
         token: "{{ vault_token }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
-        type: "{{ vault_pki_intermediate_ca_type }}"
+        type: "{% if vault_pki_intermediate_export | bool %}exported{% else %}internal{% endif %}"
         common_name: "{{ vault_pki_intermediate_ca_common_name }}"
         kind: "intermediate"
         config:
           key_bits: 4096
           max_lease_ttl: "43830h"
+          default_lease_ttl: "43830h"
       register: intermediate_ca_csr
 
     - name: "Sign Intermediate CSR"
@@ -37,7 +38,35 @@
         url: "{{ vault_api_addr }}"
         token: "{{ vault_token }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
-        certificate: "{{ intermediate_ca_csr_signed.data.certificate }}\n{{ intermediate_ca_csr_signed.data.issuing_ca }}"
+        certificate: |
+          {{ intermediate_ca_csr_signed.data.certificate }}
+          {{ intermediate_ca_csr_signed.data.issuing_ca }}
+      when:
+        - not vault_pki_intermediate_export | bool
+
+    - name: "Set Exported Intermediate as signed"
+      hashivault_pki_ca_set:
+        url: "{{ vault_api_addr }}"
+        token: "{{ vault_token }}"
+        mount_point: "{{ vault_pki_intermediate_ca_name }}"
+        pem_bundle: |
+          {{ intermediate_ca_csr_signed.data.certificate }}
+          {{ intermediate_ca_csr_signed.data.issuing_ca }}
+          {{ intermediate_ca_csr.data.private_key }}
+      when:
+        - vault_pki_intermediate_export | bool
+
+    - name: "Write out Intermediate Certs and keys to file"
+      copy:
+        content: |
+          {{ intermediate_ca_csr_signed.data.certificate }}
+          {{ intermediate_ca_csr_signed.data.issuing_ca }}
+          {{ intermediate_ca_csr.data.private_key }}
+        dest: "{{ vault_pki_certificates_directory }}/{{ vault_pki_intermediate_ca_name |replace(' ', '-') }}.pem"
+        mode: 0600
+      delegate_to: "{{ vault_pki_certificates_host }}"
+      when:
+        - vault_pki_intermediate_export | bool
 
   when: not vault_pki_intermediate_import | bool
 
@@ -49,5 +78,5 @@
         token: "{{ vault_token }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
         pem_bundle: "{{ vault_pki_intermediate_ca_bundle }}"
- 
+
   when: vault_pki_intermediate_import | bool
