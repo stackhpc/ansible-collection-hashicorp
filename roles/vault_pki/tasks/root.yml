@@ -7,8 +7,8 @@
     description: "{{ vault_pki_root_ca_name }} CA"
     backend: "pki"
     config:
-      default_lease_ttl: "43830h"
-      max_lease_ttl: "43830h"
+      default_lease_ttl: "{{ vault_pki_root_default_lease_ttl }}"
+      max_lease_ttl: "{{ vault_pki_root_max_lease_ttl }}"
 
 - name: "Generate Vault Root CA cert and key"
   hashivault_pki_ca:
@@ -19,8 +19,8 @@
     common_name: "{{ vault_pki_root_ca_common_name }}"
     kind: "root"
     config:
-      key_bits: 4096
-      ttl: "43830h"
+      key_bits: "{{ vault_pki_root_key_bits }}"
+      ttl: "{{ vault_pki_root_ttl }}"
   register: root_ca_data
 
 - name: "Write out Root CA to file"

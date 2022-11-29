@@ -6,6 +6,9 @@
     name: "{{ vault_pki_intermediate_ca_name }}"
     description: "{{ vault_pki_intermediate_ca_name }} CA"
     backend: "pki"
+    config:
+      default_lease_ttl: "{{ vault_pki_intermediate_default_lease_ttl }}"
+      max_lease_ttl: "{{ vault_pki_intermediate_max_lease_ttl }}"
 
 - name: "Generate Intermediate CA cert, key and sign CSR"
   block:
@@ -18,9 +21,8 @@
         common_name: "{{ vault_pki_intermediate_ca_common_name }}"
         kind: "intermediate"
         config:
-          key_bits: 4096
-          max_lease_ttl: "43830h"
-          default_lease_ttl: "43830h"
+          ttl: "{{ vault_pki_intermediate_ttl }}"
+          key_bits: "{{ vault_pki_intermediate_key_bits }}"
       register: intermediate_ca_csr
 
     - name: "Sign Intermediate CSR"
