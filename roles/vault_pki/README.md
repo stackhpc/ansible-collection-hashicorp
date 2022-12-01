@@ -9,6 +9,10 @@ Requirements
 Note that since version `4.6.4`, `ansible-modules-hashivault` requires
 `ansible>4`.
 
+There is a fork under https://github.com/stackhpc/ansible-modules-hashivault
+that doesn't have this requirement (and is needed for the role to operate
+correctly on ansible<4).
+
 Role variables
 --------------
 
