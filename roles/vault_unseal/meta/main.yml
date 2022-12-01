@@ -1,3 +1,6 @@
 ---
+# WORKAROUND: Without this, we see the following in some setups:
+# ERROR! couldn't resolve module/action 'hashivault_unseal'. This often indicates a misspelling, missing collection, or incorrect module path.
+# Seen using Kayobe on Ansible 2.10.17, running modules on a remote host.
 collections:
-  - community.docker
+  - community.general
