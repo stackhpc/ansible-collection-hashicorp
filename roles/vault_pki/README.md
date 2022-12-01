@@ -25,7 +25,7 @@ Role variables
     * `vault_pki_root_default_lease_ttl`: The default time in hours before expiry of the root CA certificate (default: "43830h")
     * `vault_pki_root_max_lease_ttl`: The max time in hours that is allowed before expiry of the root CA certificate (default: "43830h")
     * `vault_pki_root_ttl`: The time in hours before the root CA certificate expires (default: "43830h")
-    * `vault_pki_root_key_bits`: The key bits for the root RSA private key (default: "4096")
+    * `vault_pki_root_key_bits`: The key bits for the root RSA private key (default: 4096)
 ---
 * Vault Create Intermediate
     * `vault_pki_intermediate_create`: whether to create an intermediate CA or not (default: `true`)
@@ -33,13 +33,13 @@ Role variables
     * `vault_pki_intermediate_export`: whether to export the generated intermediate pem bundle (default: `false`)
         * Mandatory if `vault_pki_intermediate_create` equals `true`
             * `vault_pki_intermediate_ca_name`: The name of the Intermediate CA to create
-            * `vault_pki_intermediate_ca_common_name`:  The common name of the RootCA (default: `vault_pki_intermediate_ca_name`)
+            * `vault_pki_intermediate_ca_common_name`:  The common name of the Intermediate CA (default: `vault_pki_intermediate_ca_name`)
         * Mandatory if `vault_pki_intermediate_import`: equals `true`
             * `vault_pki_intermediate_ca_bundle`: Concatenated certificate, intermediate and private key
     * `vault_pki_intermediate_default_lease_ttl`: The default time in hours before expiry of the intermediate CA certificate (default: "43830h")
     * `vault_pki_intermediate_max_lease_ttl`: The max time in hours that is allowed before expiry of the intermediate CA certificate (default: "43830h")
     * `vault_pki_intermediate_ttl`: The time in hours before the intermediate CA certificate expires (default: "43830h")
-    * `vault_pki_intermediate_key_bits`: The key bits for the intermediate RSA private key (default: "4096")
+    * `vault_pki_intermediate_key_bits`: The key bits for the intermediate RSA private key (default: 4096)
     * `vault_pki_intermediate_roles`: Certificate Roles to create for the intermediate CA. List of Dicts containing `{name: <role_name>, config: { <pki_option>: <value> ...}`
 ---
 * Certificate Output
