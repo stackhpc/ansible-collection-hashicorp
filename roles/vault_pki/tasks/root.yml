@@ -29,6 +29,6 @@
       {{ root_ca_data.data.certificate }}
     dest: "{{ vault_pki_certificates_directory }}/{{ vault_pki_root_ca_name | replace(' ', '-') }}.pem"
     mode: 0600
-  delegate_to: "{{ vault_pki_certificates_host }}"
+  delegate_to: "{{ vault_pki_write_certificates_host }}"
   when:
     - vault_pki_write_root_ca_to_file | bool
