@@ -23,4 +23,4 @@
       -retry-join "{{ hostvars[host].ansible_facts[consul_bind_interface].ipv4.address }}"
       {% endif %}
       {% endfor %}
-  become: True
+  become: true

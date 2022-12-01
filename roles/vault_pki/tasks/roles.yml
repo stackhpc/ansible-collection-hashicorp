@@ -1,0 +1,9 @@
+---
+- name: "Create PKI role(s)"
+  hashivault_pki_role:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    mount_point: "{{ vault_pki_intermediate_ca_name }}"
+    name: "{{ item.name }}"
+    config: "{{ item.config }}"
+  loop: "{{ vault_pki_intermediate_roles }}"

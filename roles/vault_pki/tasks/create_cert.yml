@@ -1,0 +1,23 @@
+---
+- name: "Generate Certificate"
+  hashivault_pki_cert_issue:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    mount_point: "{{ vault_pki_intermediate_ca_name }}"
+    common_name: "{{ item.common_name }}"
+    role: "{{ item.role }}"
+    extra_params: "{{ item.extra_params }}"
+  loop: "{{ vault_pki_certificate_subject }}"
+  register: certificate_data
+
+- name: "Write out certificate pem_bundle"
+  copy:
+    content: |
+      {{ item.data.certificate }}
+      {{ item.data.issuing_ca }}
+      {{ item.data.private_key }}
+    dest: "{{ vault_pki_certificates_directory }}/{{ item.item.common_name | replace(' ', '-') }}.pem"
+    mode: 0600
+  delegate_to: "{{ vault_pki_certificates_host }}"
+  loop: "{{ certificate_data.results }}"
+  when: vault_pki_write_certificate_files | bool

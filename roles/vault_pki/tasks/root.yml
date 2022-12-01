@@ -1,0 +1,34 @@
+---
+- name: "Ensure Vault RootCA PKI backend exists"
+  hashivault_secret_engine:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    name: "{{ vault_pki_root_ca_name }}"
+    description: "{{ vault_pki_root_ca_name }} CA"
+    backend: "pki"
+    config:
+      default_lease_ttl: "{{ vault_pki_root_default_lease_ttl }}"
+      max_lease_ttl: "{{ vault_pki_root_max_lease_ttl }}"
+
+- name: "Generate Vault Root CA cert and key"
+  hashivault_pki_ca:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    mount_point: "{{ vault_pki_root_ca_name }}"
+    type: "internal"
+    common_name: "{{ vault_pki_root_ca_common_name }}"
+    kind: "root"
+    config:
+      key_bits: "{{ vault_pki_root_key_bits }}"
+      ttl: "{{ vault_pki_root_ttl }}"
+  register: root_ca_data
+
+- name: "Write out Root CA to file"
+  copy:
+    content: |
+      {{ root_ca_data.data.certificate }}
+    dest: "{{ vault_pki_certificates_directory }}/{{ vault_pki_root_ca_name | replace(' ', '-') }}.pem"
+    mode: 0600
+  delegate_to: "{{ vault_pki_certificates_host }}"
+  when:
+    - vault_pki_write_root_ca_to_file | bool

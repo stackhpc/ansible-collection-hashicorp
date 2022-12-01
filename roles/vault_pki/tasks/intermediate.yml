@@ -1,0 +1,84 @@
+---
+- name: "Ensure Vault Intermediate PKI backend exists"
+  hashivault_secret_engine:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    name: "{{ vault_pki_intermediate_ca_name }}"
+    description: "{{ vault_pki_intermediate_ca_name }} CA"
+    backend: "pki"
+    config:
+      default_lease_ttl: "{{ vault_pki_intermediate_default_lease_ttl }}"
+      max_lease_ttl: "{{ vault_pki_intermediate_max_lease_ttl }}"
+
+- name: "Generate Intermediate CA cert, key and sign CSR"
+  block:
+    - name: "Generate Vault Intermediate CA cert and key"
+      hashivault_pki_ca:
+        url: "{{ vault_api_addr }}"
+        token: "{{ vault_token }}"
+        mount_point: "{{ vault_pki_intermediate_ca_name }}"
+        type: "{% if vault_pki_intermediate_export | bool %}exported{% else %}internal{% endif %}"
+        common_name: "{{ vault_pki_intermediate_ca_common_name }}"
+        kind: "intermediate"
+        config:
+          ttl: "{{ vault_pki_intermediate_ttl }}"
+          key_bits: "{{ vault_pki_intermediate_key_bits }}"
+      register: intermediate_ca_csr
+
+    - name: "Sign Intermediate CSR"
+      hashivault_pki_cert_sign:
+        url: "{{ vault_api_addr }}"
+        token: "{{ vault_token }}"
+        mount_point: "{{ vault_pki_root_ca_name }}"
+        csr: "{{ intermediate_ca_csr.data.csr }}"
+        common_name: "{{ vault_pki_intermediate_ca_common_name }}"
+        type: intermediate
+      register: intermediate_ca_csr_signed
+
+    - name: "Set Intermediate as signed"
+      hashivault_pki_set_signed:
+        url: "{{ vault_api_addr }}"
+        token: "{{ vault_token }}"
+        mount_point: "{{ vault_pki_intermediate_ca_name }}"
+        certificate: |
+          {{ intermediate_ca_csr_signed.data.certificate }}
+          {{ intermediate_ca_csr_signed.data.issuing_ca }}
+      when:
+        - not vault_pki_intermediate_export | bool
+
+    - name: "Set Exported Intermediate as signed"
+      hashivault_pki_ca_set:
+        url: "{{ vault_api_addr }}"
+        token: "{{ vault_token }}"
+        mount_point: "{{ vault_pki_intermediate_ca_name }}"
+        pem_bundle: |
+          {{ intermediate_ca_csr_signed.data.certificate }}
+          {{ intermediate_ca_csr_signed.data.issuing_ca }}
+          {{ intermediate_ca_csr.data.private_key }}
+      when:
+        - vault_pki_intermediate_export | bool
+
+    - name: "Write out Intermediate Certs and keys to file"
+      copy:
+        content: |
+          {{ intermediate_ca_csr_signed.data.certificate }}
+          {{ intermediate_ca_csr_signed.data.issuing_ca }}
+          {{ intermediate_ca_csr.data.private_key }}
+        dest: "{{ vault_pki_certificates_directory }}/{{ vault_pki_intermediate_ca_name |replace(' ', '-') }}.pem"
+        mode: 0600
+      delegate_to: "{{ vault_pki_certificates_host }}"
+      when:
+        - vault_pki_intermediate_export | bool
+
+  when: not vault_pki_intermediate_import | bool
+
+- name: "Import Intermediate CA cert and key"
+  block:
+    - name: "Import Intermediate CA cert and key"
+      hashivault_pki_ca_set:
+        url: "{{ vault_api_addr }}"
+        token: "{{ vault_token }}"
+        mount_point: "{{ vault_pki_intermediate_ca_name }}"
+        pem_bundle: "{{ vault_pki_intermediate_ca_bundle }}"
+
+  when: vault_pki_intermediate_import | bool

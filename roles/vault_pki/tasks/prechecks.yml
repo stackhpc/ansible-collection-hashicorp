@@ -1,0 +1,10 @@
+---
+- name: "Fail if variables are not set"
+  fail:
+    msg: "variable {{ item }} is not set"
+  when:
+    - vars[item.name] | length == 0
+    - item.when
+  loop:
+    - { "name": "vault_pki_root_ca_name", "when": "vault_pki_root_create | bool" }
+    - { "name": "vault_pki_intermediate_ca_name", "when": "vault_pki_intermediate_create | bool" }

@@ -1,6 +1,6 @@
 ---
 - name: Prepare for vault role
-  gather_facts: True
+  gather_facts: true
   hosts: consul
   vars:
     consul_bind_interface: lo
@@ -28,4 +28,42 @@
       import_role:
         name: vault_unseal
       vars:
-        vault_keys: "{{ vault_keys.keys_base64 }}"
+        vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
+
+    - name: Configure PKI
+      import_role:
+        name: vault_pki
+      vars:
+        vault_token: "{{ vault_keys.root_token }}"
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_intermediate_ca_name: "OS-TLS-INT"
+        vault_pki_generate_certificates: True
+        vault_pki_intermediate_roles:
+          - name: "ServerCert"
+            config:
+              max_ttl: 8760h
+              ttl: 8760h
+              allow_any_name: true
+              allow_ip_sans: true
+              require_cn: false
+              server_flag: true
+              key_type: rsa
+              key_bits: 4096
+              country: ["UK"]
+              locality: ["Bristol"]
+              organization: ["StackHPC"]
+              ou: ["HPC"]
+        vault_pki_certificate_subject:
+          - role: 'ServerCert'
+            common_name: "OS-CERT-TEST"
+            extra_params:
+              ttl: "8760h"
+              ip_sans: "127.0.0.1"
+              alt_names: "example.com"
+              exclude_cn_from_sans: true
+          - role: 'ServerCert'
+            common_name: "OS-CERT-TEST2"
+            extra_params:
+              ttl: "8760h"
+              ip_sans: "192.168.38.72"
+              exclude_cn_from_sans: true

@@ -1,4 +1,9 @@
 ---
-- import_tasks: prechecks.yml
-- import_tasks: consul.yml
-- import_tasks: vault.yml
+- name: "Vault Prechecks"
+  import_tasks: prechecks.yml
+
+- name: "Deploy Consul"
+  import_tasks: consul.yml
+
+- name: "Deploy Vault"
+  import_tasks: vault.yml
