@@ -6,5 +6,7 @@
     - vars[item.name] | length == 0
     - item.when
   loop:
+    - { "name": "vault_api_addr", "when": true }
+    - { "name": "vault_token", when: true }
     - { "name": "vault_pki_root_ca_name", "when": "vault_pki_root_create | bool" }
     - { "name": "vault_pki_intermediate_ca_name", "when": "vault_pki_intermediate_create | bool" }

@@ -18,6 +18,6 @@
       {{ item.data.private_key }}
     dest: "{{ vault_pki_certificates_directory }}/{{ item.item.common_name | replace(' ', '-') }}.pem"
     mode: 0600
-  delegate_to: "{{ vault_pki_certificates_host }}"
+  delegate_to: "{{ vault_pki_write_certificates_host }}"
   loop: "{{ certificate_data.results }}"
   when: vault_pki_write_certificate_files | bool
