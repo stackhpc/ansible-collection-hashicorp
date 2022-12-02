@@ -11,12 +11,14 @@
   register: certificate_data
 
 - name: "Write out certificate pem_bundle"
+  vars:
+    cert_name: "{{ item.item.common_name if item.item.common_name | length > 0 else item.item.extra_params.ip_sans }}"
   copy:
     content: |
       {{ item.data.certificate }}
       {{ item.data.issuing_ca }}
       {{ item.data.private_key }}
-    dest: "{{ vault_pki_certificates_directory }}/{{ item.item.common_name | replace(' ', '-') }}.pem"
+    dest: "{{ vault_pki_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
     mode: 0600
   delegate_to: "{{ vault_pki_write_certificates_host }}"
   loop: "{{ certificate_data.results }}"
