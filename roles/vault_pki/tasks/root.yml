@@ -3,6 +3,7 @@
   hashivault_secret_engine:
     url: "{{ vault_api_addr }}"
     token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
     name: "{{ vault_pki_root_ca_name }}"
     description: "{{ vault_pki_root_ca_name }} CA"
     backend: "pki"
@@ -14,6 +15,7 @@
   hashivault_pki_ca:
     url: "{{ vault_api_addr }}"
     token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
     mount_point: "{{ vault_pki_root_ca_name }}"
     type: "internal"
     common_name: "{{ vault_pki_root_ca_common_name }}"

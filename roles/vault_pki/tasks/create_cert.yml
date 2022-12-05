@@ -3,6 +3,7 @@
   hashivault_pki_cert_issue:
     url: "{{ vault_api_addr }}"
     token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
     mount_point: "{{ vault_pki_intermediate_ca_name }}"
     common_name: "{{ item.common_name }}"
     role: "{{ item.role }}"

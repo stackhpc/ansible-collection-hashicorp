@@ -30,6 +30,7 @@
     - name: Initialize vault
       hashivault_init:
         url: "{{ vault_api_addr }}"
+        ca_cert: "{{ vault_ca_cert | default(omit) }}"
       no_log: true
       register: vault_keys_result
 
