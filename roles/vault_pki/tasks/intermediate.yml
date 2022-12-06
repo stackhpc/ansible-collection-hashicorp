@@ -3,6 +3,7 @@
   hashivault_secret_engine:
     url: "{{ vault_api_addr }}"
     token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
     name: "{{ vault_pki_intermediate_ca_name }}"
     description: "{{ vault_pki_intermediate_ca_name }} CA"
     backend: "pki"
@@ -16,6 +17,7 @@
       hashivault_pki_ca:
         url: "{{ vault_api_addr }}"
         token: "{{ vault_token }}"
+        ca_cert: "{{ vault_ca_cert | default(omit) }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
         type: "{% if vault_pki_intermediate_export | bool %}exported{% else %}internal{% endif %}"
         common_name: "{{ vault_pki_intermediate_ca_common_name }}"
@@ -29,6 +31,7 @@
       hashivault_pki_cert_sign:
         url: "{{ vault_api_addr }}"
         token: "{{ vault_token }}"
+        ca_cert: "{{ vault_ca_cert | default(omit) }}"
         mount_point: "{{ vault_pki_root_ca_name }}"
         csr: "{{ intermediate_ca_csr.data.csr }}"
         common_name: "{{ vault_pki_intermediate_ca_common_name }}"
@@ -39,6 +42,7 @@
       hashivault_pki_set_signed:
         url: "{{ vault_api_addr }}"
         token: "{{ vault_token }}"
+        ca_cert: "{{ vault_ca_cert | default(omit) }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
         certificate: |
           {{ intermediate_ca_csr_signed.data.certificate }}
@@ -50,6 +54,7 @@
       hashivault_pki_ca_set:
         url: "{{ vault_api_addr }}"
         token: "{{ vault_token }}"
+        ca_cert: "{{ vault_ca_cert | default(omit) }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
         pem_bundle: |
           {{ intermediate_ca_csr_signed.data.certificate }}
@@ -78,6 +83,7 @@
       hashivault_pki_ca_set:
         url: "{{ vault_api_addr }}"
         token: "{{ vault_token }}"
+        ca_cert: "{{ vault_ca_cert | default(omit) }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
         pem_bundle: "{{ vault_pki_intermediate_ca_bundle }}"
 

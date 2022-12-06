@@ -33,6 +33,7 @@ Role variables
     * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
 s (default: Omitted)
     * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
+    * `vault_ca_cert`: Path to CA certificate used to verify Vault server TLS cert
     * `vault_tls_key`: Path to TLS key to use by Vault
     * `vault_tls_cert`: Path to TLS cert to use by Vault
     * `vault_log_keys`: Whether to log the root token and unseal keys in the Ansible output. Default `false`
