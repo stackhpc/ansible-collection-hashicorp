@@ -16,6 +16,8 @@ vault_bind_address: ""
 vault_tls_key: ""
 vault_tls_cert: ""
 
+vault_telemetry_unauthenticated: False
+
 vault_config_dir: ""
 
 vault_config: >
@@ -33,6 +35,9 @@ vault_config: >
         {% else %}
         "tls_disable": "true"
         {% endif %}
+        "telemetry": {
+          unauthenticated_metrics_access: {{ vault_telemetry_unauthenticated | bool }}
+        }
       }{% if vault_bind_address != '127.0.0.1' %},
     },
     {

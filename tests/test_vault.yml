@@ -10,6 +10,7 @@
     vault_log_keys: true
     vault_set_keys_fact: true
     vault_write_keys_file: true
+    vault_telemetry_unauthenticated: true
   tasks:
     - name: Ensure /etc/vault exists
       file:
@@ -29,6 +30,10 @@
         name: vault_unseal
       vars:
         vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
+
+    - name: Fetch metrics
+      uri:
+        url: "{{ vault_api_addr }}/v1/sys/metrics"
 
     - name: Configure PKI
       import_role:
