@@ -17,5 +17,6 @@
 - name: "Generate Certificates"
   include_tasks: "create_cert.yml"
   when:
+    # CI
     - vault_pki_generate_certificates | bool
     - vault_pki_certificate_subject | length > 0
