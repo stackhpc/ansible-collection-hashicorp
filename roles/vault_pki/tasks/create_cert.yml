@@ -11,7 +11,7 @@
   loop: "{{ vault_pki_certificate_subject }}"
   register: certificate_data
 
-- name: "Write out certificate pem_bundle"
+- name: "Write out pem_bundle"
   vars:
     cert_name: "{{ item.item.common_name if item.item.common_name | length > 0 else item.item.extra_params.ip_sans }}"
   copy:
@@ -23,4 +23,35 @@
     mode: 0600
   delegate_to: "{{ vault_pki_write_certificates_host }}"
   loop: "{{ certificate_data.results }}"
-  when: vault_pki_write_certificate_files | bool
+  when:
+    - vault_pki_write_pem_bundle | bool
+    - vault_pki_write_certificate_files | bool
+
+- name: "Write out certificate"
+  vars:
+    cert_name: "{{ item.item.common_name if item.item.common_name | length > 0 else item.item.extra_params.ip_sans }}"
+  copy:
+    content: |
+      {{ item.data.certificate }}
+      {{ item.data.issuing_ca }}
+    dest: "{{ vault_pki_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
+    mode: 0600
+  delegate_to: "{{ vault_pki_write_certificates_host }}"
+  loop: "{{ certificate_data.results }}"
+  when:
+    - not vault_pki_write_pem_bundle | bool
+    - vault_pki_write_certificate_files | bool
+
+- name: "Write out key"
+  vars:
+    cert_name: "{{ item.item.common_name if item.item.common_name | length > 0 else item.item.extra_params.ip_sans }}"
+  copy:
+    content: |
+      {{ item.data.private_key }}
+    dest: "{{ vault_pki_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
+    mode: 0600
+  delegate_to: "{{ vault_pki_write_certificates_host }}"
+  loop: "{{ certificate_data.results }}"
+  when:
+    - not vault_pki_write_pem_bundle | bool
+    - vault_pki_write_certificate_files | bool

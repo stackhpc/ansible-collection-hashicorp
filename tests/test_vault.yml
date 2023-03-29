@@ -38,6 +38,7 @@
         vault_pki_root_ca_name: "OS-TLS-ROOT"
         vault_pki_intermediate_ca_name: "OS-TLS-INT"
         vault_pki_generate_certificates: True
+        vault_pki_write_pem_bundle: false
         vault_pki_intermediate_roles:
           - name: "ServerCert"
             config:
@@ -61,6 +62,16 @@
               ip_sans: "127.0.0.1"
               alt_names: "example.com"
               exclude_cn_from_sans: true
+    - name: Configure PKI
+      import_role:
+        name: vault_pki
+      vars:
+        vault_token: "{{ vault_keys.root_token }}"
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_intermediate_ca_name: "OS-TLS-INT"
+        vault_pki_generate_certificates: True
+        vault_pki_write_pem_bundle: True
+        vault_pki_certificate_subject:
           - role: 'ServerCert'
             common_name: "OS-CERT-TEST2"
             extra_params:
