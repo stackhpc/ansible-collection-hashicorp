@@ -13,9 +13,8 @@ Role variables
 --------------
 
 * Consul
-  * Mandatory
-    * `consul_bind_interface`: Which interface should be used for Consul
   * Optional
+    * `consul_bind_interface`: Which interface should be used for Consul (default: "lo")
     * `consul_docker_name`: Docker - under which name to run the Consul image (default: "consul")
     * `consul_docker_image`: Docker image for Consul (default: "consul")
     * `consul_docker_tag`: Docker image tag for Consul (default: "latest")
@@ -26,10 +25,10 @@ Role variables
 * Vault
   * Mandatory
     * `vault_cluster_name`: Vault cluster name (e.g. "prod_cluster")
-    * `vault_api_addr`: Vault [API addr](https://www.vaultproject.io/docs/configuration#api_addr) - Full URL including protocol and port (e.g. "http://127.0.0.1:8200")
-    * `vault_bind_address`: Which IP address should Vault bind to
     * `vault_config_dir`: Directory into which to bind mount Vault configuration
   * Optional
+    * `vault_bind_address`: Which IP address should Vault bind to (default: "127.0.0.1")
+    * `vault_api_addr`: Vault [API addr](https://www.vaultproject.io/docs/configuration#api_addr) - Full URL including protocol and port (default: "http://127.0.0.1:8200")
     * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
 s (default: Omitted)
     * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
