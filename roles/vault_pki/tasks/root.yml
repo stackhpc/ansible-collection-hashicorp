@@ -29,7 +29,7 @@
   copy:
     content: |
       {{ root_ca_data.data.certificate }}
-    dest: "{{ vault_pki_certificates_directory }}/{{ vault_pki_root_ca_name | replace(' ', '-') }}.pem"
+    dest: "{{ vault_pki_write_certificates_directory }}/{{ vault_pki_root_ca_name | replace(' ', '-') }}.pem"
     mode: 0600
   delegate_to: "{{ vault_pki_write_certificates_host }}"
   when:

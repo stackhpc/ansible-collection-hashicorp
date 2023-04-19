@@ -38,9 +38,11 @@
         vault_pki_root_ca_name: "OS-TLS-ROOT"
         vault_pki_intermediate_ca_name: "OS-TLS-INT"
         vault_pki_root_create: true
+        vault_pki_write_root_ca_to_file: true
         vault_pki_intermediate_create: true
         vault_pki_generate_certificates: True
         vault_pki_write_pem_bundle: false
+        vault_pki_write_certificates_directory: "/tmp/"
         vault_pki_intermediate_roles:
           - name: "ServerCert"
             config:
@@ -86,7 +88,23 @@
               exclude_cn_from_sans: true
     - name: Validate if certificates exist
       stat:
-        path: "/tmp/OS-CERT-TEST2.pem"
+        path: "/tmp/{{ item }}"
       register: stat_result
       failed_when: not stat_result.stat.exists
+      loop:
+        - OS-CERT-TEST.pem
+        - OS-CERT-TEST2.pem
+
+    - name: verify certificate chain
+      shell: "openssl verify -CAfile {{ vault_pki_write_certificates_directory }}/{{ vault_pki_root_ca_name | replace(' ', '-') }}.pem /tmp/{{ item }}"
+      register: verify_result
+      failed_when: verify_result.rc >= 1
+      loop:
+        - OS-CERT-TEST.pem
+        - OS-CERT-TEST2.pem
+
+
+`
+
+
 
