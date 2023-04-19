@@ -63,6 +63,16 @@
       when:
         - vault_pki_intermediate_export | bool
 
+    - name: "Write out Intermediate CA to file"
+      copy:
+        content: |
+          {{ intermediate_ca_csr_signed.data.certificate }}
+        dest: "{{ vault_pki_write_certificates_directory }}/{{ vault_pki_intermediate_ca_name | replace(' ', '-') }}.pem"
+        mode: 0600
+      delegate_to: "{{ vault_pki_write_certificates_host }}"
+      when:
+        - vault_pki_write_int_ca_to_file | bool
+
     - name: "Write out Intermediate Certs and keys to file"
       copy:
         content: |

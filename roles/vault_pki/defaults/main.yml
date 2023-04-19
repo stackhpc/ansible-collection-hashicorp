@@ -14,6 +14,7 @@ vault_pki_intermediate_import: false
 vault_pki_intermediate_export: false
 vault_pki_intermediate_ca_name: ""
 vault_pki_intermediate_ca_common_name: "{{ vault_pki_intermediate_ca_name }}"
+vault_pki_write_int_ca_to_file: false
 vault_pki_intermediate_ca_bundle: ""
 vault_pki_intermediate_default_lease_ttl: "43830h"
 vault_pki_intermediate_max_lease_ttl: "43830h"

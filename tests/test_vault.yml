@@ -40,6 +40,7 @@
         vault_pki_root_create: true
         vault_pki_write_root_ca_to_file: true
         vault_pki_intermediate_create: true
+        vault_pki_write_int_ca_to_file: true
         vault_pki_generate_certificates: true
         vault_pki_write_certificate_files: true
         vault_pki_write_pem_bundle: false
@@ -97,8 +98,9 @@
         - OS-CERT-TEST2.pem
 
     - name: verify certificate chain
-      command: |
-        openssl verify -CAfile /tmp/OS-TLS-ROOT.pem 
+      command: | 
+        cat /tmp/OS-TLS-ROOT.pem /tmp/OS-TLS-INT.pem > /tmp/CA-CHAIN.pem && 
+        openssl verify -CAfile /tmp/CA-CHAIN.pem
         /tmp/{{ item }}
       register: verify_result
       failed_when: verify_result.rc >= 1
