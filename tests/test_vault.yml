@@ -98,8 +98,10 @@
         - OS-CERT-TEST2.pem
 
     - name: concatenate CAs
-      command: | 
+      shell: | 
         cat /tmp/OS-TLS-ROOT.pem /tmp/OS-TLS-INT.pem > /tmp/CA-CHAIN.pem
+      args:
+        executable: /bin/bash
       become: true
 
     - name: verify certificate chain
