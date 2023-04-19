@@ -96,15 +96,12 @@
         - OS-CERT-TEST2.pem
 
     - name: verify certificate chain
-      shell: "openssl verify -CAfile {{ vault_pki_write_certificates_directory }}/{{ vault_pki_root_ca_name | replace(' ', '-') }}.pem /tmp/{{ item }}"
+      shell: |
+        openssl verify -CAfile {{ vault_pki_write_certificates_directory }}/{{ vault_pki_root_ca_name | replace(' ', '-') }}.pem 
+        /tmp/{{ item }}
       register: verify_result
       failed_when: verify_result.rc >= 1
       loop:
         - OS-CERT-TEST.pem
         - OS-CERT-TEST2.pem
-
-
-`
-
-
 
