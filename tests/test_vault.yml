@@ -97,7 +97,7 @@
         - OS-CERT-TEST2.pem
 
     - name: verify certificate chain
-      shell: |
+      command: |
         openssl verify -CAfile /tmp/OS-TLS-ROOT.pem 
         /tmp/{{ item }}
       register: verify_result
