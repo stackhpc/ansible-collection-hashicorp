@@ -98,7 +98,7 @@
 
     - name: verify certificate chain
       shell: |
-        openssl verify -CAfile OS-TLS-ROOT.pem 
+        openssl verify -CAfile /tmp/OS-TLS-ROOT.pem 
         /tmp/{{ item }}
       register: verify_result
       failed_when: verify_result.rc >= 1
