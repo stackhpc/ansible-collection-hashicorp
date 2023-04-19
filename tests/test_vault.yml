@@ -64,7 +64,7 @@
               ip_sans: "127.0.0.1"
               alt_names: "example.com"
               exclude_cn_from_sans: true
-    - name: Configure PKI - generate certificates
+    - name: Configure PKI - generate certificates pem bundle
       include_role:
         name: vault_pki
       vars:
@@ -76,7 +76,7 @@
         vault_pki_generate_certificates: true
         vault_pki_write_certificate_files: true
         vault_pki_write_pem_bundle: true
-        vault_pki_certificates_directory: "/tmp/"
+        vault_pki_write_certificates_directory: "/tmp/"
         vault_pki_certificate_subject:
           - role: 'ServerCert'
             common_name: "OS-CERT-TEST2"
