@@ -102,6 +102,7 @@
         /tmp/{{ item }}
       register: verify_result
       failed_when: verify_result.rc >= 1
+      become: true
       loop:
         - OS-CERT-TEST.pem
         - OS-CERT-TEST2.pem
