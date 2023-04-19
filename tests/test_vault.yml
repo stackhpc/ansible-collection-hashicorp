@@ -40,7 +40,8 @@
         vault_pki_root_create: true
         vault_pki_write_root_ca_to_file: true
         vault_pki_intermediate_create: true
-        vault_pki_generate_certificates: True
+        vault_pki_generate_certificates: true
+        vault_pki_write_certificate_files: true
         vault_pki_write_pem_bundle: false
         vault_pki_write_certificates_directory: "/tmp/"
         vault_pki_intermediate_roles:
