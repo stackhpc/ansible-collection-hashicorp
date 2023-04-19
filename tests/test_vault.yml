@@ -68,7 +68,7 @@
               ip_sans: "127.0.0.1"
               alt_names: "example.com"
               exclude_cn_from_sans: true
-    - name: Configure PKI - generate certificates pem bundle
+    - name: Configure PKI - generate certificate pem bundle
       include_role:
         name: vault_pki
       vars:
