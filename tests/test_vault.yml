@@ -97,9 +97,13 @@
         - OS-CERT-TEST.pem
         - OS-CERT-TEST2.pem
 
+    - name: concatenate CAs
+      command: | 
+        cat /tmp/OS-TLS-ROOT.pem /tmp/OS-TLS-INT.pem > /tmp/CA-CHAIN.pem
+      become: true
+
     - name: verify certificate chain
       command: | 
-        cat /tmp/OS-TLS-ROOT.pem /tmp/OS-TLS-INT.pem > /tmp/CA-CHAIN.pem && 
         openssl verify -CAfile /tmp/CA-CHAIN.pem
         /tmp/{{ item }}
       register: verify_result
