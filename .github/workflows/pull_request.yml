@@ -65,7 +65,7 @@ jobs:
           else
               ansible_package=ansible-core
           fi
-          python3 -m pip install $ansible_package==$ansible_version.* docker git+https://github.com/stackhpc/ansible-modules-hashivault@stackhpc-test
+          python3 -m pip install $ansible_package==$ansible_version.* docker git+https://github.com/stackhpc/ansible-modules-hashivault@stackhpc
           ansible-galaxy collection build
           ansible-galaxy collection install *.tar.gz
 
