@@ -1,4 +1,9 @@
 ---
+- name: "Check if Cert already exists"
+  stat:
+    path: "{{ vault_pki_write_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
+  register: cert_file
+
 - name: "Generate Certificate"
   hashivault_pki_cert_issue:
     url: "{{ vault_api_addr }}"
@@ -10,6 +15,8 @@
     extra_params: "{{ item.extra_params }}"
   loop: "{{ vault_pki_certificate_subject }}"
   register: certificate_data
+  when:
+    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
 
 - name: "Write out certificate pem_bundle"
   vars:
@@ -26,6 +33,8 @@
   when:
     - vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
+    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
+
 
 - name: "Write out certificate"
   vars:
@@ -41,6 +50,8 @@
   when:
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
+    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
+
 
 - name: "Write out key"
   vars:
@@ -55,3 +66,4 @@
   when:
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
+    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
