@@ -1,8 +1,9 @@
 ---
 - name: "Check if Cert already exists"
   stat:
-    path: "{{ vault_pki_write_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
+    path: "{{ vault_pki_write_certificates_directory }}/{{ item.common_name | replace(' ', '-') }}.pem"
   register: cert_file
+  loop: "{{ vault_pki_certificate_subject }}"
 
 - name: "Generate Certificate"
   hashivault_pki_cert_issue:
