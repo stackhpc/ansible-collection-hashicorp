@@ -5,6 +5,10 @@
   register: cert_file
   loop: "{{ vault_pki_certificate_subject }}"
 
+- name: Print cert_file
+  debug:
+    var: cert_file
+
 - name: "Generate Certificate"
   hashivault_pki_cert_issue:
     url: "{{ vault_api_addr }}"
