@@ -37,6 +37,9 @@
         common_name: "{{ vault_pki_intermediate_ca_common_name }}"
         type: intermediate
       register: intermediate_ca_csr_signed
+      when:
+        - intermediate_ca_csr.changed
+        - intermediate_ca_csr.data is defined
 
     - name: "Set Intermediate as signed"
       hashivault_pki_set_signed:
@@ -62,6 +65,8 @@
           {{ intermediate_ca_csr.data.private_key }}
       when:
         - vault_pki_intermediate_export | bool
+        - intermediate_ca_csr.changed
+        - intermediate_ca_csr.data is defined
 
     - name: "Write out Intermediate CA to file"
       copy:
@@ -84,6 +89,9 @@
       delegate_to: "{{ vault_pki_write_certificates_host }}"
       when:
         - vault_pki_intermediate_export | bool
+        - intermediate_ca_csr.changed
+        - intermediate_ca_csr.data is defined
+        - intermediate_ca_csr_signed.data is defined
 
   when: not vault_pki_intermediate_import | bool
 

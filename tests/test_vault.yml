@@ -68,6 +68,7 @@
               ip_sans: "127.0.0.1"
               alt_names: "example.com"
               exclude_cn_from_sans: true
+
     - name: Configure PKI - generate certificate pem bundle
       include_role:
         name: vault_pki
@@ -88,13 +89,14 @@
               ttl: "8760h"
               ip_sans: "192.168.38.72"
               exclude_cn_from_sans: true
+
     - name: Validate if certificates exist
       stat:
         path: "/tmp/{{ item }}"
       register: stat_result
       failed_when: not stat_result.stat.exists
       loop:
-        - OS-CERT-TEST.pem
+        - OS-CERT-TEST.crt
         - OS-CERT-TEST2.pem
 
     - name: concatenate CAs
@@ -112,6 +114,6 @@
       failed_when: verify_result.rc >= 1
       become: true
       loop:
-        - OS-CERT-TEST.pem
+        - OS-CERT-TEST.crt
         - OS-CERT-TEST2.pem
 

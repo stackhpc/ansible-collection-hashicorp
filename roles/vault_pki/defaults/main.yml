@@ -29,5 +29,6 @@ vault_pki_write_pem_bundle: true
 vault_pki_write_certificates_host: "localhost"
 vault_pki_write_certificates_directory: ""
 vault_pki_write_certificate_files: false
+vault_pki_overwrite_certificates: false
 
 vault_pki_certificate_subject: []

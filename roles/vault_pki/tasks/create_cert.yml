@@ -1,15 +1,16 @@
 ---
-- name: "Check if Cert already exists"
+- name: "Check if Cert already exists in certificates directory"
   stat:
-    path: "{{ vault_pki_write_certificates_directory }}/{{ item.common_name | replace(' ', '-') }}.pem"
-  register: cert_file
+    path: "{{ vault_pki_write_certificates_directory }}/{{ item.common_name | replace(' ', '-') }}.crt"
+  register: cert_stat_file
+  delegate_to: "{{ vault_pki_write_certificates_host }}"
   loop: "{{ vault_pki_certificate_subject }}"
-
-- name: Print cert_file
-  debug:
-    var: cert_file
+  loop_control:
+    label: "{{ item.common_name }}"
 
 - name: "Generate Certificate"
+  vars:
+    cert_file: "{{ cert_stat_file.results | selectattr('item.common_name', 'match', item.common_name) | first }}"
   hashivault_pki_cert_issue:
     url: "{{ vault_api_addr }}"
     token: "{{ vault_token }}"
@@ -19,13 +20,14 @@
     role: "{{ item.role }}"
     extra_params: "{{ item.extra_params }}"
   loop: "{{ vault_pki_certificate_subject }}"
-  register: certificate_data
-  when:
-    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
+  loop_control:
+    label: "{{ item.common_name }}"
+  register: cert_data
 
 - name: "Write out certificate pem_bundle"
   vars:
-    cert_name: "{{ item.item.common_name if item.item.common_name | length > 0 else item.item.extra_params.ip_sans }}"
+    cert_name: "{{ item.item.common_name if item.item.common_name | default() | length > 0 else item.item.extra_params.ip_sans | default() }}"
+    cert_file: "{{ cert_stat_file.results | selectattr('item.common_name', 'match', item.item.common_name) | first }}"
   copy:
     content: |
       {{ item.data.certificate }}
@@ -34,40 +36,46 @@
     dest: "{{ vault_pki_write_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
     mode: 0600
   delegate_to: "{{ vault_pki_write_certificates_host }}"
-  loop: "{{ certificate_data.results }}"
+  loop: "{{ cert_data.results }}"
+  loop_control:
+    label: "{{ cert_name | default() }}"
   when:
     - vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
     - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
 
-
 - name: "Write out certificate"
   vars:
-    cert_name: "{{ item.item.common_name if item.item.common_name | length > 0 else item.item.extra_params.ip_sans }}"
+    cert_name: "{{ item.item.common_name if item.item.common_name | default() | length > 0 else item.item.extra_params.ip_sans | default() }}"
+    cert_file: "{{ cert_stat_file.results | selectattr('item.common_name', 'match', item.item.common_name) | first }}"
   copy:
     content: |
       {{ item.data.certificate }}
       {{ item.data.issuing_ca }}
-    dest: "{{ vault_pki_write_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
+    dest: "{{ vault_pki_write_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.crt"
     mode: 0600
   delegate_to: "{{ vault_pki_write_certificates_host }}"
-  loop: "{{ certificate_data.results }}"
+  loop: "{{ cert_data.results }}"
+  loop_control:
+    label: "{{ cert_name | default() }}"
   when:
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
     - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
-
-
+    
 - name: "Write out key"
   vars:
-    cert_name: "{{ item.item.common_name if item.item.common_name | length > 0 else item.item.extra_params.ip_sans }}"
+    cert_name: "{{ item.item.common_name if item.item.common_name | default() | length > 0 else item.item.extra_params.ip_sans | default() }}"
+    cert_file: "{{ cert_stat_file.results | selectattr('item.common_name', 'match', item.item.common_name) | first }}"
   copy:
     content: |
       {{ item.data.private_key }}
-    dest: "{{ vault_pki_write_certificates_directory }}/{{ cert_name | replace(' ', '-') }}-key.pem"
+    dest: "{{ vault_pki_write_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.key"
     mode: 0600
   delegate_to: "{{ vault_pki_write_certificates_host }}"
-  loop: "{{ certificate_data.results }}"
+  loop: "{{ cert_data.results }}"
+  loop_control:
+    label: "{{ cert_name | default() }}"
   when:
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
