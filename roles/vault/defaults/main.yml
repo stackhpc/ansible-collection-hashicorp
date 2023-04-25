@@ -9,10 +9,11 @@ vault_docker_image: "vault"
 vault_docker_tag: "latest"
 
 vault_cluster_name: ""
+vault_protocol: "{{ 'https' if vault_tls_key and vault_tls_cert else 'http' }}"
 # Allow vault_vip_url and vault_vip_address for backwards compatibility.
-vault_vip_address: "{{ vault_vip_url | default('') }}"
-vault_api_addr: "{{ ('https://' ~ vault_vip_address ~ ':8200') if vault_vip_address else '' }}"
-vault_bind_address: ""
+vault_vip_address: "{{ vault_vip_url | default(vault_bind_address) }}"
+vault_api_addr: "{{ vault_protocol ~ '://' ~ vault_vip_address ~ ':8200' }}"
+vault_bind_address: "127.0.0.1"
 vault_tls_key: ""
 vault_tls_cert: ""
 
@@ -54,7 +55,7 @@ vault_config: >
     }
   }
 
-consul_bind_interface: ""
+consul_bind_interface: "lo"
 consul_bind_ip: "{{ hostvars[inventory_hostname].ansible_facts[consul_bind_interface].ipv4.address }}"
 
 # Docker options

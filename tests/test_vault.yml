@@ -3,9 +3,6 @@
   gather_facts: true
   hosts: consul
   vars:
-    consul_bind_interface: lo
-    vault_bind_address: 127.0.0.1
-    vault_api_addr: http://127.0.0.1:8200
     vault_config_dir: "/etc/vault"
     vault_log_keys: true
     vault_set_keys_fact: true
@@ -29,6 +26,7 @@
         name: vault_unseal
       vars:
         vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
+        vault_protocol: "http"
 
     - name: Configure PKI
       import_role:
