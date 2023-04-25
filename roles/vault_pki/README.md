@@ -46,5 +46,4 @@ Role variables
     * `vault_pki_generate_certificates`: whether to generate leaf certificates or not (default: `false`)
     * `vault_pki_write_certificates_host:` The host on which certificates will be written to. (default: "localhost")
     * `vault_pki_certificates_directory`: directory to output certificate files to.
-    * `vault_pki_write_certificates`: whether to write generated certificates to a file or not (default: `false`)
     * `vault_pki_certificate_subject`: The certificate subject parameters e.g. `ttl` `ip_sans`. List of Dicts containing `{role: <name of Certificate role>, common_name: <common name of certificate>, extra_params: {ttl: <value>, alt_sans: <value>, ip_sans: <value> }}`
