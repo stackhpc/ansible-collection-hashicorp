@@ -5,6 +5,7 @@
   vars:
     vault_config_dir: "/etc/vault"
     vault_log_keys: true
+    vault_protocol: http
     vault_set_keys_fact: true
     vault_write_keys_file: true
   tasks:
@@ -26,7 +27,6 @@
         name: vault_unseal
       vars:
         vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
-        vault_protocol: "http"
 
     - name: Configure PKI - create root/intermediate and generate certificates
       include_role:
