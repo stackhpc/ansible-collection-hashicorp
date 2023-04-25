@@ -109,7 +109,7 @@
         openssl verify -CAfile /tmp/CA-CHAIN.pem
         /tmp/{{ item }}
       register: verify_result
-      failed_when: verify_result.rc >= 1
+      failed_when: verify_result.rc != 0
       loop:
         - OS-CERT-TEST.crt
         - OS-CERT-TEST2.pem
