@@ -40,6 +40,7 @@
               ip_sans: "127.0.0.1"
               alt_names: "example.com"
               exclude_cn_from_sans: true
+        vault_pki_certificates_directory: "/tmp/"
         vault_pki_generate_certificates: true
         vault_pki_intermediate_ca_name: "OS-TLS-INT"
         vault_pki_intermediate_create: true
@@ -61,7 +62,6 @@
         vault_pki_root_ca_name: "OS-TLS-ROOT"
         vault_pki_root_create: true
         vault_pki_write_certificate_files: true
-        vault_pki_write_certificates_directory: "/tmp/"
         vault_pki_write_int_ca_to_file: true
         vault_pki_write_pem_bundle: false
         vault_pki_write_root_ca_to_file: true

@@ -5,6 +5,8 @@ vault_bind_address: "127.0.0.1"
 vault_protocol: "https"
 vault_vip_address: "{{ vault_vip_url | default(vault_bind_address) }}"
 
+vault_pki_certificates_directory: ""
+
 vault_pki_root_ca_name: ""
 vault_pki_root_ca_common_name: "{{ vault_pki_root_ca_name }}"
 vault_pki_root_create: true
@@ -33,7 +35,6 @@ vault_pki_write_pem_bundle: true
 
 vault_pki_overwrite_certificates: false
 vault_pki_write_certificates_host: "localhost"
-vault_pki_write_certificates_directory: ""
 vault_pki_write_certificate_files: false
 
 vault_pki_certificate_subject: []
