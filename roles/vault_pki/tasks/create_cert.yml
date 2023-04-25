@@ -7,6 +7,7 @@
   loop: "{{ vault_pki_certificate_subject }}"
   loop_control:
     label: "{{ item.common_name }}"
+  when: vault_pki_write_certificate_files | bool
 
 - name: "Generate Certificate"
   vars:

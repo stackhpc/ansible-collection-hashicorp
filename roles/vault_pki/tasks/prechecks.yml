@@ -3,7 +3,8 @@
   fail:
     msg: "variable {{ item.name }} is not set"
   when:
-    - vars[item.name] | default() | length == 0
+    - vars[item.name] is defined
+    - vars[item.name] | length == 0
     - item.when
   loop:
     - { "name": "vault_api_addr", "when": true }
