@@ -3,6 +3,7 @@
   fail:
     msg: "variable {{ item.name }} is not set"
   when:
+    - vars[item.name] is defined
     - vars[item.name] | length == 0
     - item.when
   loop:

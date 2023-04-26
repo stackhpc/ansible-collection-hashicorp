@@ -5,6 +5,7 @@
   vars:
     vault_config_dir: "/etc/vault"
     vault_log_keys: true
+    vault_protocol: http
     vault_set_keys_fact: true
     vault_write_keys_file: true
   tasks:
@@ -22,20 +23,27 @@
         name: vault
 
     - name: Unseal vault
-      import_role:
+      include_role:
         name: vault_unseal
       vars:
         vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
-        vault_protocol: "http"
 
-    - name: Configure PKI
-      import_role:
+    - name: Configure PKI - create root/intermediate and generate certificates
+      include_role:
         name: vault_pki
       vars:
-        vault_token: "{{ vault_keys.root_token }}"
-        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_certificate_subject:
+          - role: 'ServerCert'
+            common_name: "OS-CERT-TEST"
+            extra_params:
+              ttl: "8760h"
+              ip_sans: "127.0.0.1"
+              alt_names: "example.com"
+              exclude_cn_from_sans: true
+        vault_pki_certificates_directory: "/tmp/"
+        vault_pki_generate_certificates: true
         vault_pki_intermediate_ca_name: "OS-TLS-INT"
-        vault_pki_generate_certificates: True
+        vault_pki_intermediate_create: true
         vault_pki_intermediate_roles:
           - name: "ServerCert"
             config:
@@ -51,17 +59,58 @@
               locality: ["Bristol"]
               organization: ["StackHPC"]
               ou: ["HPC"]
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_root_create: true
+        vault_pki_write_certificate_files: true
+        vault_pki_write_int_ca_to_file: true
+        vault_pki_write_pem_bundle: false
+        vault_pki_write_root_ca_to_file: true
+        vault_token: "{{ vault_keys.root_token }}"
+
+    - name: Configure PKI - generate certificate pem bundle
+      include_role:
+        name: vault_pki
+      vars:
         vault_pki_certificate_subject:
-          - role: 'ServerCert'
-            common_name: "OS-CERT-TEST"
-            extra_params:
-              ttl: "8760h"
-              ip_sans: "127.0.0.1"
-              alt_names: "example.com"
-              exclude_cn_from_sans: true
           - role: 'ServerCert'
             common_name: "OS-CERT-TEST2"
             extra_params:
               ttl: "8760h"
               ip_sans: "192.168.38.72"
               exclude_cn_from_sans: true
+        vault_pki_certificates_directory: "/tmp/"
+        vault_pki_generate_certificates: true
+        vault_pki_intermediate_ca_name: "OS-TLS-INT"
+        vault_pki_intermediate_create: false
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_root_create: false
+        vault_pki_write_certificate_files: true
+        vault_pki_write_pem_bundle: true
+        vault_token: "{{ vault_keys.root_token }}"
+
+    - name: Validate if certificates exist
+      stat:
+        path: "/tmp/{{ item }}"
+      register: stat_result
+      failed_when: not stat_result.stat.exists
+      loop:
+        - OS-CERT-TEST.crt
+        - OS-CERT-TEST2.pem
+
+    - name: concatenate CAs
+      shell: | 
+        cat /tmp/OS-TLS-ROOT.pem /tmp/OS-TLS-INT.pem > /tmp/CA-CHAIN.pem
+      args:
+        executable: /bin/bash
+      become: true
+
+    - name: verify certificate chain
+      command: | 
+        openssl verify -CAfile /tmp/CA-CHAIN.pem
+        /tmp/{{ item }}
+      register: verify_result
+      failed_when: verify_result.rc != 0
+      loop:
+        - OS-CERT-TEST.crt
+        - OS-CERT-TEST2.pem
+

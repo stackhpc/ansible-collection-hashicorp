@@ -1,31 +1,40 @@
 ---
-vault_pki_root_create: true
+# Allow vault_vip_url and vault_vip_address for backwards compatibility.
+vault_api_addr: "{{ vault_protocol ~ '://' ~ vault_vip_address ~ ':8200' }}"
+vault_bind_address: "127.0.0.1"
+vault_protocol: "https"
+vault_vip_address: "{{ vault_vip_url | default(vault_bind_address) }}"
+
+vault_pki_certificates_directory: ""
+
 vault_pki_root_ca_name: ""
 vault_pki_root_ca_common_name: "{{ vault_pki_root_ca_name }}"
-vault_pki_write_root_ca_to_file: false
+vault_pki_root_create: true
 vault_pki_root_default_lease_ttl: "43830h"
+vault_pki_root_key_bits: 4096
 vault_pki_root_max_lease_ttl: "43830h"
 vault_pki_root_ttl: "43830h"
-vault_pki_root_key_bits: 4096
+vault_pki_write_root_ca_to_file: false
 
-
-vault_pki_intermediate_create: true
-vault_pki_intermediate_import: false
-vault_pki_intermediate_export: false
 vault_pki_intermediate_ca_name: ""
 vault_pki_intermediate_ca_common_name: "{{ vault_pki_intermediate_ca_name }}"
 vault_pki_intermediate_ca_bundle: ""
+vault_pki_intermediate_create: true
 vault_pki_intermediate_default_lease_ttl: "43830h"
+vault_pki_intermediate_import: false
+vault_pki_intermediate_export: false
+vault_pki_intermediate_key_bits: 4096
 vault_pki_intermediate_max_lease_ttl: "43830h"
 vault_pki_intermediate_ttl: "43830h"
-vault_pki_intermediate_key_bits: 4096
+vault_pki_write_int_ca_to_file: false
 
 vault_pki_intermediate_roles: {}
 
 vault_pki_generate_certificates: false
+vault_pki_write_pem_bundle: true
 
+vault_pki_overwrite_certificates: false
 vault_pki_write_certificates_host: "localhost"
-vault_pki_write_certificates_directory: ""
 vault_pki_write_certificate_files: false
 
 vault_pki_certificate_subject: []
