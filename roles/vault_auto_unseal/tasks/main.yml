@@ -1,0 +1,67 @@
+---
+- name: "Ensure transit secret engine is configured"
+  hashivault_secret_engine:
+    name: "{{ vault_auto_unseal_transit_engine_name }}"
+    backend: "transit"
+    state: "present"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
+
+- name: "Create transit/keys/autounseal"
+  hashivault_secret:
+    mount_point: "transit/keys"
+    secret: "{{ vault_auto_unseal_key_name }}"
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
+
+- name: "Create autounseal policy"
+  hashivault_policy:
+    name: "{{ vault_auto_unseal_policy_name }}"
+    rules: |
+      path "transit/encrypt/{{ vault_auto_unseal_key_name }}" {
+        capabilities = [ "update" ]
+      }
+      path "transit/decrypt/{{ vault_auto_unseal_key_name }}" {
+        capabilities = [ "update" ]
+      }
+    state: present
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
+
+- name: "Create an orphan periodic client token with the autounseal policy attached"
+  hashivault_token_create:
+    display_name: "{{ vault_auto_unseal_token_name }}"
+    orphan: true
+    period: "{{ vault_auto_unseal_token_period }}"
+    policies:
+      - "{{ vault_auto_unseal_policy_name }}"
+    wrap_ttl: "{{ vault_auto_unseal_token_wrap_ttl }}"
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
+  register: vault_auto_unseal_wrapping_token
+
+- name: Print vault keys
+  debug:
+    var: vault_auto_unseal_wrapping_token
+  when:
+    - vault_auto_unseal_log_token | bool
+
+- name: Set vault_auto_unseal_token fact
+  set_fact:
+    vault_keys: "{{ vault_auto_unseal_wrapping_token }}"
+  when:
+    - vault_auto_unseal_set_token_fact | bool
+
+- name: Write vault keys to a file
+  copy:
+    content: "{{ vault_auto_unseal_wrapping_token | to_nice_json }}"
+    dest: "{{ vault_auto_unseal_write_token_file_path }}"
+    mode: 0600
+  delegate_to: "{{ vault_auto_unseal_write_token_file_host }}"
+  when:
+    - vault_auto_unseal_write_token_file | bool

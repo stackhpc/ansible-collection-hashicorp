@@ -1,0 +1,10 @@
+---
+vault_auto_unseal_transit_engine_name: "transit"
+
+vault_auto_unseal_key_name: "autounseal"
+
+vault_auto_unseal_policy_name: "autounseal"
+
+vault_auto_unseal_token_name: "autounseal"
+vault_auto_unseal_token_period: "120"
+vault_auto_unseal_token_wrap_ttl: "24h"
