@@ -89,3 +89,6 @@ vault_write_keys_file: false
 vault_write_keys_file_host: localhost
 # Path of file to write root token and unseal keys.
 vault_write_keys_file_path: vault-keys.json
+
+# Secret engines to configure
+vault_secret_engine: []

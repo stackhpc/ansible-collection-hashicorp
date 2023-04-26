@@ -5,6 +5,9 @@
   vars:
     vault_config_dir: "/etc/vault"
     vault_log_keys: true
+    vault_secret_engine:
+      - name: "transit"
+        backend: "transit"
     vault_set_keys_fact: true
     vault_write_keys_file: true
   tasks:

@@ -33,6 +33,7 @@ Role variables
 s (default: Omitted)
     * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
     * `vault_ca_cert`: Path to CA certificate used to verify Vault server TLS cert
+    * `vault_secret_engine`: List of dictionaries in format supported by the [hashivault_secret_engine module](https://terryhowe.github.io/ansible-modules-hashivault/modules/hashivault_secret_engine_module.html)
     * `vault_tls_key`: Path to TLS key to use by Vault
     * `vault_tls_cert`: Path to TLS cert to use by Vault
     * `vault_log_keys`: Whether to log the root token and unseal keys in the Ansible output. Default `false`

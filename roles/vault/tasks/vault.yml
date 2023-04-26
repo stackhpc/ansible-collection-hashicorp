@@ -57,3 +57,16 @@
   run_once: true
   when:
     - not vault_init_status.json.initialized
+
+- name: "Ensure secrets engines are configured"
+  hashivault_secret_engine:
+    name: "{{ item.name }}"
+    backend: "{{ item.backend }}"
+    cas_required: "{{ item.cas_required | default(omit) }}"
+    config: "{{ item.config | default(omit) }}"
+    description: "{{ item.description | default(omit) }}"
+    max_versions: "{{ item.max_versions | default(omit) }}"
+    options: "{{ item.options | default(omit) }}"
+    state: "{{ item.state | default(omit) }}"
+  loop: "{{ vault_secret_engine }}"
+    
