@@ -18,7 +18,7 @@
 
 - name: Check if vault is initialized
   uri:
-    url: "{{ vault_api_addr }}/v1/sys/init"
+    url: "{{ vault_init_addr }}/v1/sys/init"
   register: vault_init_status
   retries: 50
   delay: 1
@@ -29,7 +29,7 @@
   block:
     - name: Initialize vault
       hashivault_init:
-        url: "{{ vault_api_addr }}"
+        url: "{{ vault_init_addr }}"
         ca_cert: "{{ vault_ca_cert | default(omit) }}"
       no_log: true
       register: vault_keys_result
