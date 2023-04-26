@@ -14,6 +14,7 @@ vault_protocol: "{{ 'https' if vault_tls_key and vault_tls_cert else 'http' }}"
 vault_vip_address: "{{ vault_vip_url | default(vault_bind_address) }}"
 vault_api_addr: "{{ vault_protocol ~ '://' ~ vault_vip_address ~ ':8200' }}"
 vault_bind_address: "127.0.0.1"
+vault_init_addr: "http://127.0.0.1:8200"
 vault_tls_key: ""
 vault_tls_cert: ""
 
