@@ -28,6 +28,13 @@
         vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
         vault_protocol: "http"
 
+    - name: Configure auto unseal
+      import_role:
+        name: vault_auto_unseal
+      vars:
+        vault_token: "{{ vault_keys.root_token }}"
+        vault_auto_unseal_log_token: true
+
     - name: Configure PKI
       import_role:
         name: vault_pki
