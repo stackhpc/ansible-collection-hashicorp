@@ -33,6 +33,7 @@ vault_pki_intermediate_roles: {}
 vault_pki_generate_certificates: false
 vault_pki_write_pem_bundle: true
 
+vault_pki_overwrite_certificates: false
 vault_pki_write_certificates_host: "localhost"
 vault_pki_write_certificate_files: false
 

@@ -47,5 +47,6 @@ Role variables
     * `vault_pki_certificate_subject`: The certificate subject parameters e.g. `ttl` `ip_sans`. List of Dicts containing `{role: <name of Certificate role>, common_name: <common name of certificate>, extra_params: {ttl: <value>, alt_sans: <value>, ip_sans: <value> }}`
     * `vault_pki_certificates_directory`: directory to output certificate files to.
     * `vault_pki_generate_certificates`: whether to generate leaf certificates or not (default: `false`)
+    * `vault_pki_overwrite_certificates`: whether to overwrite certificates (default: `false`)
     * `vault_pki_write_certificates_host:` The host on which certificates will be written to. (default: "localhost")
     * `vault_pki_write_pem_bundle`: output the generated certificate and private key into a single file (default: `true`)
