@@ -43,7 +43,6 @@
   when:
     - vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
-    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
 
 - name: "Write out certificate"
   vars:
@@ -62,7 +61,6 @@
   when:
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
-    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
     
 - name: "Write out key"
   vars:
@@ -80,4 +78,3 @@
   when:
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
-    - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
