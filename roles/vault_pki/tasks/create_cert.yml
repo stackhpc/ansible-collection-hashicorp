@@ -10,8 +10,6 @@
   when: vault_pki_write_certificate_files | bool
 
 - name: "Generate Certificate"
-  vars:
-    cert_file: "{{ cert_stat_file.results | selectattr('item.common_name', 'match', item.common_name) | first }}"
   hashivault_pki_cert_issue:
     url: "{{ vault_api_addr }}"
     token: "{{ vault_token }}"
