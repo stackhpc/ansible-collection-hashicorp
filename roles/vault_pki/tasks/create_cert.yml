@@ -9,7 +9,33 @@
     label: "{{ item.common_name }}"
   when: vault_pki_write_certificate_files | bool
 
+- name: "Get a list of certificates"
+  hashivault_pki_cert_list:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
+    mount_point: "{{ vault_pki_intermediate_ca_name }}"
+  register: cert_list
+
+- name: "Get certificate details"
+  hashivault_pki_cert_get:
+    url: "{{ vault_api_addr }}"
+    token: "{{ vault_token }}"
+    ca_cert: "{{ vault_ca_cert | default(omit) }}"
+    mount_point: "{{ vault_pki_intermediate_ca_name }}"
+    serial: "{{ item }}"
+  loop: "{{ cert_list.data }}"
+  register: cert_list_details
+
+- name: "Get x509 cert details"
+  openssl_certificate_info:
+    content: "{{ item.data.certificate }}"
+  loop: "{{ cert_list_details.results | default([]) }}"
+  register: cert_details
+
 - name: "Generate Certificate"
+  vars:
+    cert_exists: "{{ (cert_details.results | selectattr('subject.commonName', 'match', item.common_name) | first) | default() }}"
   hashivault_pki_cert_issue:
     url: "{{ vault_api_addr }}"
     token: "{{ vault_token }}"
@@ -22,6 +48,11 @@
   loop_control:
     label: "{{ item.common_name }}"
   register: cert_data
+  when: cert_exists is none or vault_pki_overwrite_certificates | bool
+
+- name: "Debug"
+  debug:
+    var: cert_data
 
 - name: "Write out certificate pem_bundle"
   vars:
@@ -39,6 +70,7 @@
   loop_control:
     label: "{{ cert_name | default() }}"
   when:
+    - not item.skipped
     - vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
     - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
@@ -58,6 +90,7 @@
   loop_control:
     label: "{{ cert_name | default() }}"
   when:
+    - not item.skipped
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
     - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
@@ -76,6 +109,7 @@
   loop_control:
     label: "{{ cert_name | default() }}"
   when:
+    - not item.skipped
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
     - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
