@@ -1,11 +1,11 @@
 ---
 consul_docker_name: "consul"
-consul_docker_image: "consul"
+consul_docker_image: "hashicorp/consul"
 consul_docker_tag: "latest"
 consul_docker_volume: "consul_data"
 
 vault_docker_name: "vault"
-vault_docker_image: "vault"
+vault_docker_image: "hashicorp/vault"
 vault_docker_tag: "latest"
 
 vault_cluster_name: ""
