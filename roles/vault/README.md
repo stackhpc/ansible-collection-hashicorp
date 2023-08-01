@@ -12,6 +12,12 @@ Note that since version `4.6.4`, `ansible-modules-hashivault` requires
 Role variables
 --------------
 
+* Common variables
+  * Optional
+    * `hashicorp_registry_url`: Address of the Docker registry used to authenticate (default: "")
+    * `hashicorp_registry_username`: Username used to authenticate with the Docker registry (default: "")
+    * `hashicorp_registry_password`: Password used to authenticate with the Docker registry (default: "")
+
 * Consul
   * Optional
     * `consul_bind_interface`: Which interface should be used for Consul (default: "lo")
