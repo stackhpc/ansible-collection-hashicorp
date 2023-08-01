@@ -22,7 +22,7 @@ Role variables
   * Optional
     * `consul_bind_interface`: Which interface should be used for Consul (default: "lo")
     * `consul_docker_name`: Docker - under which name to run the Consul image (default: "consul")
-    * `consul_docker_image`: Docker image for Consul (default: "consul")
+    * `consul_docker_image`: Docker image for Consul (default: "hashicorp/consul")
     * `consul_docker_tag`: Docker image tag for Consul (default: "latest")
     * `consul_docker_volume`: Docker volume name for Consul data (default: "consul_data")
     * `consul_container.etc_hosts`: Dict of `{<hostname>:<ip_address>}` to be added to container /etc/hosts (default: Omitted)
@@ -36,6 +36,9 @@ Role variables
     * `vault_bind_address`: Which IP address should Vault bind to (default: "127.0.0.1")
     * `vault_api_addr`: Vault [API addr](https://www.vaultproject.io/docs/configuration#api_addr) - Full URL including protocol and port (default: "http://127.0.0.1:8200")
     * `vault_init_addr`: Vault init addr (used only for initialisation purposes) - full URL including protocol and port (default: "http://127.0.0.1:8200")
+    * `vault_docker_name`: Docker - under which name to run the Vault image (default: "vault")
+    * `vault_docker_image`: Docker image for Vault (default: "hashicorp/vault")
+    * `vault_docker_tag`: Docker image tag for Vault (default: "latest")
     * `consul_container.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
 s (default: Omitted)
     * `vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
