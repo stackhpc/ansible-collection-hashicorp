@@ -5,3 +5,5 @@ name: Ansible collection linters
 jobs:
   lint:
     uses: stackhpc/.github/.github/workflows/lint-collection.yml@main
+    with:
+      lint_pip_dependencies: "git+https://github.com/stackhpc/ansible-modules-hashivault@stackhpc"
