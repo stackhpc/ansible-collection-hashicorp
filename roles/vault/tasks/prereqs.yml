@@ -1,0 +1,8 @@
+---
+- name: Log into Docker registry
+  docker_login:
+    registry: "{{ hashicorp_registry_url }}"
+    username: "{{ hashicorp_registry_username }}"
+    password: "{{ hashicorp_registry_password }}"
+  when: hashicorp_registry_username | length > 0
+  become: true
