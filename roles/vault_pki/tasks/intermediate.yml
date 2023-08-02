@@ -74,7 +74,7 @@
         content: |
           {{ intermediate_ca_csr_signed.data.certificate }}
         dest: "{{ vault_pki_certificates_directory }}/{{ vault_pki_intermediate_ca_name | replace(' ', '-') }}.crt"
-        mode: 0600
+        mode: "0600"
       delegate_to: "{{ vault_pki_write_certificates_host }}"
       when:
         - vault_pki_write_int_ca_to_file | bool
@@ -86,7 +86,7 @@
           {{ intermediate_ca_csr_signed.data.issuing_ca }}
           {{ intermediate_ca_csr.data.private_key }}
         dest: "{{ vault_pki_certificates_directory }}/{{ vault_pki_intermediate_ca_name |replace(' ', '-') }}.pem"
-        mode: 0600
+        mode: "0600"
       delegate_to: "{{ vault_pki_write_certificates_host }}"
       when:
         - vault_pki_intermediate_export | bool

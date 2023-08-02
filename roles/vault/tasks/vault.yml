@@ -53,7 +53,7 @@
       copy:
         content: "{{ vault_keys_result | to_nice_json }}"
         dest: "{{ vault_write_keys_file_path }}"
-        mode: 0600
+        mode: "0600"
       delegate_to: "{{ vault_write_keys_file_host }}"
       when:
         - vault_write_keys_file | bool

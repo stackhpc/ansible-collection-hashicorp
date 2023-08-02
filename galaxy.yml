@@ -9,7 +9,9 @@ dependencies:
 license:
   - "Apache-2.0"
 tags:
-  - hashicorp
-  - vault
   - consul
+  - hashicorp
+  - infrastructure
+  - security
+  - vault
 repository: "https://github.com/stackhpc/ansible-collection-hashicorp"
