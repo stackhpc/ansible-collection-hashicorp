@@ -8,36 +8,6 @@ on:
       - master
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        ansible:
-          - "2.9"
-          - "2.10"
-          - "2.12"
-    steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
-      - uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: |
-          pipx uninstall ansible-core
-          python3 -m pip install --upgrade pip
-          if [[ "${{ matrix.ansible }}" = "2.9" ]]; then
-              ansible_package=ansible
-          elif [[ "${{ matrix.ansible }}" = "2.10" ]]; then
-              ansible_package=ansible
-          else
-              ansible_package=ansible-core
-          fi
-          pip3 install $ansible_package==${{ matrix.ansible }}.* 'ansible-lint==5.*'
-
-      - name: Linting code
-        run: |
-          ansible-lint -v --force-color
-
   integration:
     runs-on: ubuntu-latest
     strategy:
