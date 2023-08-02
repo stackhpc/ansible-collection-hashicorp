@@ -1,5 +1,5 @@
-namespace: "stackhpc"
-name: "hashicorp"
+namespace: stackhpc
+name: hashicorp
 version: "2.3.0"
 readme: "README.md"
 authors:

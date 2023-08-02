@@ -113,4 +113,3 @@
       loop:
         - OS-CERT-TEST.crt
         - OS-CERT-TEST2.pem
-
