@@ -1,4 +1,8 @@
 ---
+hashicorp_registry_url: ""
+hashicorp_registry_username: ""
+hashicorp_registry_password: ""
+
 consul_docker_name: "consul"
 consul_docker_image: "hashicorp/consul"
 consul_docker_tag: "latest"

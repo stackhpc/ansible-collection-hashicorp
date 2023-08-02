@@ -2,6 +2,9 @@
 - name: "Vault Prechecks"
   import_tasks: prechecks.yml
 
+- name: "Vault Prerequisites"
+  import_tasks: prereqs.yml
+
 - name: "Deploy Consul"
   import_tasks: consul.yml
 
