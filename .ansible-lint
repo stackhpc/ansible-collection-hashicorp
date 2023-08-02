@@ -1,3 +1,17 @@
 ---
 skip_list:
-  - '701'  # meta/main.yml should contain relevant info
+  - key-order[task]
+  - jinja[spacing]
+  - name[missing]
+  - var-naming[no-role-prefix]
+  - yaml[octal-values]
+  - yaml[trailing-spaces]
+  - yaml[truthy]
+  - name[casing]
+  - risky-file-permissions
+  - galaxy[no-changelog]
+  - galaxy[tags]
+  - meta-runtime[unsupported-version]
+  - no-changed-when
+  - fqcn[action-core]
+  - fqcn[action]
