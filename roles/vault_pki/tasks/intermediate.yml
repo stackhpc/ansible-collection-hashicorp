@@ -12,6 +12,7 @@
       max_lease_ttl: "{{ vault_pki_intermediate_max_lease_ttl }}"
 
 - name: "Generate Intermediate CA cert, key and sign CSR"
+  when: not vault_pki_intermediate_import | bool
   block:
     - name: "Generate Vault Intermediate CA cert and key"
       hashivault_pki_ca:
@@ -93,9 +94,9 @@
         - intermediate_ca_csr.data is defined
         - intermediate_ca_csr_signed.data is defined
 
-  when: not vault_pki_intermediate_import | bool
 
 - name: "Import Intermediate CA cert and key"
+  when: vault_pki_intermediate_import | bool
   block:
     - name: "Import Intermediate CA cert and key"
       hashivault_pki_ca_set:
@@ -104,5 +105,3 @@
         ca_cert: "{{ vault_ca_cert | default(omit) }}"
         mount_point: "{{ vault_pki_intermediate_ca_name }}"
         pem_bundle: "{{ vault_pki_intermediate_ca_bundle }}"
-
-  when: vault_pki_intermediate_import | bool

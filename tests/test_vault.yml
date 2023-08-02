@@ -15,11 +15,12 @@
         state: directory
       become: true
 
-    - include_role:
+    - name: Include vault role
+      include_role:
         name: vault
 
-    # Idempotence test
-    - include_role:
+    - name: Include vault role (idemoptence test)
+      include_role:
         name: vault
 
     - name: Unseal vault

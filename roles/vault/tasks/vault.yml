@@ -26,6 +26,9 @@
   until: vault_init_status.status == 200
 
 - name: "Initialize vault"
+  run_once: true
+  when:
+    - not vault_init_status.json.initialized
   block:
     - name: Initialize vault
       hashivault_init:
@@ -54,6 +57,3 @@
       delegate_to: "{{ vault_write_keys_file_host }}"
       when:
         - vault_write_keys_file | bool
-  run_once: true
-  when:
-    - not vault_init_status.json.initialized
