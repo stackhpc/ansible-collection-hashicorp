@@ -26,6 +26,9 @@
   until: vault_init_status.status == 200
 
 - name: "Initialize vault"
+  run_once: true
+  when:
+    - not vault_init_status.json.initialized
   block:
     - name: Initialize vault
       hashivault_init:
@@ -50,10 +53,7 @@
       copy:
         content: "{{ vault_keys_result | to_nice_json }}"
         dest: "{{ vault_write_keys_file_path }}"
-        mode: 0600
+        mode: "0600"
       delegate_to: "{{ vault_write_keys_file_host }}"
       when:
         - vault_write_keys_file | bool
-  run_once: true
-  when:
-    - not vault_init_status.json.initialized

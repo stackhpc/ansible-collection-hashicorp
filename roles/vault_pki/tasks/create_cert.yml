@@ -33,7 +33,7 @@
       {{ item.data.issuing_ca }}
       {{ item.data.private_key }}
     dest: "{{ vault_pki_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.pem"
-    mode: 0600
+    mode: "0600"
   delegate_to: "{{ vault_pki_write_certificates_host }}"
   loop: "{{ cert_data.results }}"
   loop_control:
@@ -52,7 +52,7 @@
       {{ item.data.certificate }}
       {{ item.data.issuing_ca }}
     dest: "{{ vault_pki_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.crt"
-    mode: 0600
+    mode: "0600"
   delegate_to: "{{ vault_pki_write_certificates_host }}"
   loop: "{{ cert_data.results }}"
   loop_control:
@@ -61,7 +61,7 @@
     - not vault_pki_write_pem_bundle | bool
     - vault_pki_write_certificate_files | bool
     - not cert_file.stat.exists or vault_pki_overwrite_certificates | bool
-    
+
 - name: "Write out key"
   vars:
     cert_name: "{{ item.item.common_name if item.item.common_name | default() | length > 0 else item.item.extra_params.ip_sans | default() }}"
@@ -70,7 +70,7 @@
     content: |
       {{ item.data.private_key }}
     dest: "{{ vault_pki_certificates_directory }}/{{ cert_name | replace(' ', '-') }}.key"
-    mode: 0600
+    mode: "0600"
   delegate_to: "{{ vault_pki_write_certificates_host }}"
   loop: "{{ cert_data.results }}"
   loop_control:

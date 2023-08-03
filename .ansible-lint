@@ -1,3 +1,7 @@
 ---
 skip_list:
-  - '701'  # meta/main.yml should contain relevant info
+  - var-naming[no-role-prefix]
+  - galaxy[no-changelog]
+  - meta-runtime[unsupported-version]
+  - fqcn[action-core]
+  - fqcn[action]

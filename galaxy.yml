@@ -1,5 +1,7 @@
-namespace: "stackhpc"
-name: "hashicorp"
+namespace: stackhpc
+name: hashicorp
+description: >
+  Hashicorp Vault/Consul deployment and configuration
 version: "2.4.0"
 readme: "README.md"
 authors:
@@ -9,7 +11,9 @@ dependencies:
 license:
   - "Apache-2.0"
 tags:
-  - hashicorp
-  - vault
   - consul
+  - hashicorp
+  - infrastructure
+  - security
+  - vault
 repository: "https://github.com/stackhpc/ansible-collection-hashicorp"
