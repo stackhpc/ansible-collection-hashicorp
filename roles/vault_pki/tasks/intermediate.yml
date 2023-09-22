@@ -53,6 +53,8 @@
           {{ intermediate_ca_csr_signed.data.issuing_ca }}
       when:
         - not vault_pki_intermediate_export | bool
+        - intermediate_ca_csr.changed
+        - intermediate_ca_csr.data is defined
 
     - name: "Set Exported Intermediate as signed"
       hashivault_pki_ca_set:
@@ -78,6 +80,8 @@
       delegate_to: "{{ vault_pki_write_certificates_host }}"
       when:
         - vault_pki_write_int_ca_to_file | bool
+        - intermediate_ca_csr.changed
+        - intermediate_ca_csr.data is defined
 
     - name: "Write out Intermediate Certs and keys to file"
       copy:
