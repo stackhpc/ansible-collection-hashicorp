@@ -31,8 +31,6 @@
         vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
 
     - name: Configure PKI - create root/intermediate and generate certificates
-      include_role:
-        name: vault_pki
       vars:
         vault_pki_certificate_subject:
           - role: 'ServerCert'
@@ -68,10 +66,16 @@
         vault_pki_write_pem_bundle: false
         vault_pki_write_root_ca_to_file: true
         vault_token: "{{ vault_keys.root_token }}"
+      block:
+        - name: Configure PKI - create root/intermediate and generate certificates
+          include_role:
+            name: vault_pki
+
+        - name: Configure PKI - create root/intermediate and generate certificates (idempotence test)
+          include_role:
+            name: vault_pki
 
     - name: Configure PKI - generate certificate pem bundle
-      include_role:
-        name: vault_pki
       vars:
         vault_pki_certificate_subject:
           - role: 'ServerCert'
@@ -89,6 +93,14 @@
         vault_pki_write_certificate_files: true
         vault_pki_write_pem_bundle: true
         vault_token: "{{ vault_keys.root_token }}"
+      block:
+        - name: Configure PKI - generate certificate pem bundle
+          include_role:
+            name: vault_pki
+
+        - name: Configure PKI - generate certificate pem bundle (idempotence test)
+          include_role:
+            name: vault_pki
 
     - name: Validate if certificates exist
       stat:
