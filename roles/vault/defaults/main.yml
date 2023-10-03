@@ -50,7 +50,7 @@ vault_config: >
     }],
     "storage": {
     "consul": {
-       "address": "127.0.0.1:8500",
+       "address": "127.0.0.1:{{ consul_bind_port }}",
        "path": "vault/"
       }
     },
@@ -62,6 +62,7 @@ vault_config: >
 
 consul_bind_interface: "lo"
 consul_bind_ip: "{{ hostvars[inventory_hostname].ansible_facts[consul_bind_interface].ipv4.address }}"
+consul_bind_port: "8500"
 
 # Docker options
 vault_container: {}

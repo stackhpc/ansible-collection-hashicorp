@@ -21,6 +21,7 @@ Role variables
 * Consul
   * Optional
     * `consul_bind_interface`: Which interface should be used for Consul (default: "lo")
+    * `consul_bind_port`: Which port should be used for Consul (default: "8500")
     * `consul_docker_name`: Docker - under which name to run the Consul image (default: "consul")
     * `consul_docker_image`: Docker image for Consul (default: "hashicorp/consul")
     * `consul_docker_tag`: Docker image tag for Consul (default: "latest")

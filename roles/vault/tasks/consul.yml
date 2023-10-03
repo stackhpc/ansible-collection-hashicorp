@@ -17,6 +17,7 @@
       -bind "{{  hostvars[inventory_hostname].ansible_facts[consul_bind_interface].ipv4.address }}"
       -data-dir /consul/data
       -server
+      -http-port "{{ consul_bind_port }}"
       -bootstrap-expect "{{ ansible_play_hosts | length }}"
       {% for host in ansible_play_hosts %}
       {% if host != inventory_hostname %}
