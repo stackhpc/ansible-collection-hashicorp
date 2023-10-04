@@ -71,6 +71,8 @@ consul_container: {}
 # Default volume mapping
 _vault_default_volumes:
   - "{{ vault_config_dir }}:/vault/config"
+  - "vault_file:/vault/file"
+  - "vault_logs:/vault/logs"
 _consul_default_volumes:
   - "{{ consul_docker_volume }}:/consul/data"
 
