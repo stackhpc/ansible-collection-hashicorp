@@ -1,3 +1,4 @@
+---
 name: Tests
 
 # Controls when the action will run.
@@ -14,9 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         ansible:
-          - "2.9"
-          - "2.10"
-          - "2.12"
+          - "2.16"
+          - "2.17"
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
       - uses: actions/checkout@v3
@@ -26,15 +26,8 @@ jobs:
           pipx uninstall ansible-core
           python3 -m pip install --upgrade pip
           ansible_version=${{ matrix.ansible }}
-          if [[ "${{ matrix.ansible }}" = "2.9" ]]; then
-              ansible_package=ansible
-          elif [[ "${{ matrix.ansible }}" = "2.10" ]]; then
-              ansible_package=ansible
-              ansible_version=3
-          else
-              ansible_package=ansible-core
-          fi
-          python3 -m pip install $ansible_package==$ansible_version.* docker git+https://github.com/stackhpc/ansible-modules-hashivault@stackhpc
+          python3 -m pip install ansible-core==$ansible_version.* docker ansible-modules-hashivault
+          ansible-galaxy collection install -r core-requirements.yml
           ansible-galaxy collection build
           ansible-galaxy collection install *.tar.gz
 
