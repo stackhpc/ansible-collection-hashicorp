@@ -24,6 +24,7 @@
 - name: Check if vault is sealed
   uri:
     url: "{{ vault_api_addr }}/v1/sys/seal-status"
+    validate_certs: "{{ vault_unseal_verify | default(omit) }}"
   register: vault_seal_status
 
 - name: Fail when vault is still sealed
