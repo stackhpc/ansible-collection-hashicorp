@@ -1,0 +1,59 @@
+---
+- name: Ensure OpenBao container is running
+  docker_container:
+    name: "{{ openbao_docker_name }}"
+    image: "{{ openbao_docker_image }}:{{ openbao_docker_tag }}"
+    network_mode: host
+    etc_hosts: "{{ openbao_container.etc_hosts | default(omit) }}"
+    capabilities: IPC_LOCK
+    volumes: "{{ _openbao_volumes }}"
+    comparisons:
+      '*': strict
+    restart_policy: "always"
+    env:
+      BAO_LOCAL_CONFIG: "{{ openbao_config | to_json }}"
+    command: >
+      server
+  become: true
+
+- name: Check if OpenBao is initialized
+  uri:
+    url: "{{ openbao_init_addr }}/v1/sys/init"
+  register: openbao_init_status
+  retries: 50
+  delay: 1
+  run_once: true
+  until: openbao_init_status.status == 200
+
+- name: "Initialize OpenBao"
+  run_once: true
+  when:
+    - not openbao_init_status.json.initialized
+  block:
+    - name: Initialize OpenBao
+      hashivault_init:
+        url: "{{ openbao_init_addr }}"
+        ca_cert: "{{ openbao_ca_cert | default(omit) }}"
+      no_log: true
+      register: openbao_keys_result
+
+    - name: Print OpenBao keys
+      debug:
+        var: openbao_keys_result
+      when:
+        - openbao_log_keys | bool
+
+    - name: Set openbao_keys fact
+      set_fact:
+        openbao_keys: "{{ openbao_keys_result }}"
+      when:
+        - openbao_set_keys_fact | bool
+
+    - name: Write OpenBao keys to a file
+      copy:
+        content: "{{ openbao_keys_result | to_nice_json }}"
+        dest: "{{ openbao_write_keys_file_path }}"
+        mode: "0600"
+      delegate_to: "{{ openbao_write_keys_file_host }}"
+      when:
+        - openbao_write_keys_file | bool

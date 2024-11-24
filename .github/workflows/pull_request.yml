@@ -17,6 +17,9 @@ jobs:
           - "2.9"
           - "2.10"
           - "2.12"
+        type:
+          - "vault"
+          - "openbao"
     steps:
       # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
       - uses: actions/checkout@v3
@@ -41,4 +44,4 @@ jobs:
       # TODO: Use ansible-test to run these.
       - name: Running integration tests
         run: |
-          ansible-playbook -i tests/inventory -v tests/*.yml -e ansible_python_interpreter=$(which python3)
+          ansible-playbook -i tests/inventory -v tests/test_${{ matrix.type }}.yml -e ansible_python_interpreter=$(which python3)
