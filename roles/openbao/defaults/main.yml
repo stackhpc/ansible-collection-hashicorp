@@ -1,11 +1,11 @@
 ---
-openbao_registry_url: ""
-openbao_registry_username: ""
+openbao_registry_url: "https://github.com/g0rgamesh/openbao"
+openbao_registry_username: "g0rgamesh"
 openbao_registry_password: ""
 
 openbao_docker_name: "bao"
 openbao_docker_image: "openbao/openbao"
-openbao_docker_tag: "latest"
+openbao_docker_tag: "rav"
 
 openbao_cluster_name: ""
 openbao_protocol: "{{ 'https' if openbao_tls_key and openbao_tls_cert else 'http' }}"
