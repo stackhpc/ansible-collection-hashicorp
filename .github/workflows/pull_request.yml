@@ -35,9 +35,10 @@ jobs:
         run: |
           pipx uninstall ansible-core
           python3 -m pip install --upgrade pip
-          python3 -m pip install ansible-core==${{ matrix.ansible_version }}.* docker git+https://github.com/stackhpc/ansible-modules-hashivault@c22434d887f0b8a5ac3ebda710664a027291e71c  # yamllint disable-line rule:line-length
+          python3 -m pip install ansible-core==${{ matrix.ansible_version }}.* docker git+https://github.com/stackhpc/ansible-modules-hashivault@main
           ansible-galaxy collection build
           ansible-galaxy collection install *.tar.gz
+          ansible-galaxy collection install community.general
 
       - name: Run integration tests 🧪
         run: |
