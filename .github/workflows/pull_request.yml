@@ -35,7 +35,7 @@ jobs:
         run: |
           pipx uninstall ansible-core
           python3 -m pip install --upgrade pip
-          python3 -m pip install ansible-core==${{ matrix.ansible_version }}.* docker git+https://github.com/stackhpc/ansible-modules-hashivault@main
+          python3 -m pip install ansible-core==${{ matrix.ansible_version }}.* docker git+https://github.com/TerryHowe/ansible-modules-hashivault@5.3.0
           ansible-galaxy collection build
           ansible-galaxy collection install *.tar.gz
           ansible-galaxy collection install community.general
