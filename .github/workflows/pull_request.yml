@@ -13,21 +13,33 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        ansible:
-          - "2.12"
+        ansible_version:
+          - "2.15"
+          - "2.18"
+        python_version:
+          - "3.9"
+          - "3.11"
+        exclude:
+          - python_version: "3.9"
+            ansible_version: "2.18"
     steps:
-      # Checks-out the repository under $GITHUB_WORKSPACE, so it's accessible to the job
-      - uses: actions/checkout@v3
+      - name: Github Checkout 🛎
+        uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Setup Python ${{ matrix.python_version }} 🐍
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Install dependencies 📦
         run: |
           pipx uninstall ansible-core
           python3 -m pip install --upgrade pip
-          python3 -m pip install ansible-core==${{ matrix.ansible }}.* docker git+https://github.com/stackhpc/ansible-modules-hashivault@stackhpc
+          python3 -m pip install ansible-core==${{ matrix.ansible_version }}.* docker git+https://github.com/TerryHowe/ansible-modules-hashivault@c22434d887f0b8a5ac3ebda710664a027291e71c
           ansible-galaxy collection build
           ansible-galaxy collection install *.tar.gz
+          ansible-galaxy collection install community.general
 
-      # TODO: Use ansible-test to run these.
-      - name: Running integration tests
+      - name: Run integration tests 🧪
         run: |
           ansible-playbook -i tests/inventory -v tests/*.yml -e ansible_python_interpreter=$(which python3)
