@@ -1,0 +1,6 @@
+---
+- name: "Vault Prerequisites"
+  import_tasks: prereqs.yml
+
+- name: "Deploy OpenBao"
+  import_tasks: openbao.yml

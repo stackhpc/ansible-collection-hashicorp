@@ -1,0 +1,86 @@
+---
+openbao_registry_url: ""
+openbao_registry_username: ""
+openbao_registry_password: ""
+
+openbao_docker_name: "bao"
+openbao_docker_image: "openbao/openbao"
+openbao_docker_tag: "latest"
+
+openbao_cluster_name: ""
+openbao_protocol: "{{ 'https' if openbao_tls_key and openbao_tls_cert else 'http' }}"
+# Allow openbao_vip_url and openbao_vip_address for backwards compatibility.
+openbao_vip_address: "{{ openbao_vip_url | default(openbao_bind_address) }}"
+openbao_api_addr: "{{ openbao_protocol ~ '://' ~ openbao_vip_address ~ ':8200' }}"
+openbao_bind_address: "127.0.0.1"
+openbao_init_addr: "http://127.0.0.1:8200"
+openbao_tls_key: ""
+openbao_tls_cert: ""
+
+openbao_config_dir: ""
+
+openbao_config: >
+  {
+    "cluster_name": "{{ openbao_cluster_name }}",
+    "ui": false,
+    "api_addr": "{{ openbao_api_addr }}",
+    "cluster_addr": "http://127.0.0.1:8201",
+    "listener": [{
+      "tcp": {
+        "address": "{{ openbao_bind_address }}:8200",
+        {% if openbao_tls_key and openbao_tls_cert %}
+        "tls_min_version": "tls12",
+        "tls_key_file": "/bao/config/{{ openbao_tls_key }}",
+        "tls_cert_file": "/bao/config/{{ openbao_tls_cert }}"
+        {% else %}
+        "tls_disable": "true"
+        {% endif %}
+      }{% if openbao_bind_address != '127.0.0.1' %},
+    },
+    {
+      "tcp": {
+        "address": "127.0.0.1:8200",
+        "tls_disable": "true"
+      }
+    {% endif %}
+    }],
+    "storage": {
+    "raft": {
+       "node_id": "raft_{{ ansible_facts.nodename }}",
+       "path": "/openbao/file"
+      }
+    },
+    "telemetry": {
+      "prometheus_retention_time": "30s",
+      "disable_hostname": true
+    }
+  }
+
+# Docker options
+openbao_container: {}
+
+# Docker volumes
+# Default volume mapping
+_openbao_default_volumes:
+  - "{{ openbao_config_dir | default('openbao_config', true) }}:/openbao/config"
+  - "openbao_file:/openbao/file"
+  - "openbao_logs:/openbao/logs"
+
+# Exposed for playbooks to access later
+openbao_extra_volumes: []
+
+# Combined volume lists
+_openbao_volumes: "{{ _openbao_default_volumes + openbao_extra_volumes }}"
+
+# Whether to log the root token and unseal keys in the Ansible output.
+openbao_log_keys: false
+
+# Whether to set a openbao_keys fact containing the root token and unseal keys.
+openbao_set_keys_fact: false
+
+# Whether to write the root token and unseal keys to a file.
+openbao_write_keys_file: false
+# Host on which to write root token and unseal keys.
+openbao_write_keys_file_host: localhost
+# Path of file to write root token and unseal keys.
+openbao_write_keys_file_path: bao-keys.json

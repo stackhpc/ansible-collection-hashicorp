@@ -22,6 +22,9 @@ jobs:
         exclude:
           - python_version: "3.9"
             ansible_version: "2.18"
+        type:
+          - openbao
+          - vault
     steps:
       - name: Github Checkout 🛎
         uses: actions/checkout@v4
@@ -42,4 +45,4 @@ jobs:
 
       - name: Run integration tests 🧪
         run: |
-          ansible-playbook -i tests/inventory -v tests/*.yml -e ansible_python_interpreter=$(which python3)
+          ansible-playbook -i tests/inventory -v tests/test_${{ matrix.type }}.yml -e ansible_python_interpreter=$(which python3)

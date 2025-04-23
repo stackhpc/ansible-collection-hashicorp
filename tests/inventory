@@ -1,2 +1,5 @@
 [consul]
 localhost ansible_connection=local
+
+[openbao]
+localhost ansible_connection=local
