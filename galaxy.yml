@@ -2,7 +2,7 @@ namespace: stackhpc
 name: hashicorp
 description: >
   Hashicorp Vault/Consul deployment and configuration
-version: "2.5.1"
+version: "2.6.0"
 readme: "README.md"
 authors:
   - "Michał Nasiadka"
@@ -11,6 +11,7 @@ authors:
   - "Pierre Riteau"
   - "Bartosz Bezak"
   - "Kyle Dean"
+  - "Jack Hodgkiss"
 dependencies:
   "community.docker": "*"
 license:
@@ -21,4 +22,5 @@ tags:
   - infrastructure
   - security
   - vault
+  - openbao
 repository: "https://github.com/stackhpc/ansible-collection-hashicorp"
