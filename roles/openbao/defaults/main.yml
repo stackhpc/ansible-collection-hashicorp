@@ -3,7 +3,7 @@ openbao_registry_url: ""
 openbao_registry_username: ""
 openbao_registry_password: ""
 
-openbao_docker_name: "bao"
+openbao_docker_name: "openbao"
 openbao_docker_image: "openbao/openbao"
 openbao_docker_tag: "latest"
 

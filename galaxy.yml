@@ -2,7 +2,7 @@ namespace: stackhpc
 name: hashicorp
 description: >
   Hashicorp Vault/Consul deployment and configuration
-version: "2.6.0"
+version: "2.6.1"
 readme: "README.md"
 authors:
   - "Michał Nasiadka"
