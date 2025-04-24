@@ -30,8 +30,8 @@ openbao_config: >
         "address": "{{ openbao_bind_address }}:8200",
         {% if openbao_tls_key and openbao_tls_cert %}
         "tls_min_version": "tls12",
-        "tls_key_file": "/bao/config/{{ openbao_tls_key }}",
-        "tls_cert_file": "/bao/config/{{ openbao_tls_cert }}"
+        "tls_key_file": "/openbao/config/{{ openbao_tls_key }}",
+        "tls_cert_file": "/openbao/config/{{ openbao_tls_cert }}"
         {% else %}
         "tls_disable": "true"
         {% endif %}
