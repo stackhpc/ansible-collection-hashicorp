@@ -6,4 +6,4 @@ jobs:
   lint:
     uses: stackhpc/.github/.github/workflows/lint-collection.yml@main
     with:
-      lint_pip_dependencies: git+https://github.com/TerryHowe/ansible-modules-hashivault@c22434d887f0b8a5ac3ebda710664a027291e71c
+      lint_pip_dependencies: git+https://github.com/stackhpc/ansible-modules-hashivault@stackhpc
