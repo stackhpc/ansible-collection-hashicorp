@@ -8,3 +8,4 @@ skip_list:
   - meta-no-info
 warn_list:
   - yaml[line-length]
+  - run-once[task]

@@ -1,0 +1,179 @@
+---
+- name: Deploy HA OpenBao
+  gather_facts: true
+  hosts: openbao_ha
+  vars:
+    openbao_log_keys: true
+    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
+    openbao_set_keys_fact: true
+    openbao_write_keys_file: true
+    openbao_raft_leaders:
+      - "127.0.0.1"
+    _openbao_default_volumes:
+      - "{{ openbao_config_dir }}/config:/openbao/config"
+      - "{{ openbao_config_dir }}/openbao_file:/openbao/file"
+      - "{{ openbao_config_dir }}/openbao_logs:/openbao/logs"
+  tasks:
+    - name: Debug
+      ansible.builtin.debug:
+        var: openbao_api_addr
+
+    - name: Ensure /etc/openbao exists
+      ansible.builtin.file:
+        path: /etc/openbao
+        state: directory
+        mode: "0700"
+      become: true
+
+    - name: Include openbao role
+      ansible.builtin.include_role:
+        name: openbao
+
+    - name: Include openbao role (idemoptence test)
+      ansible.builtin.include_role:
+        name: openbao
+
+      # As this test is evaluating OpenBao configured for high availability backed
+      # by `Raft` we must first ensure that the primary or leader instance is unsealed
+      # before attempting to unseal the other members.
+    - name: Unseal vault
+      ansible.builtin.include_role:
+        name: vault_unseal
+      vars:
+        vault_api_addr: "{{ openbao_api_addr }}"
+        vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+      run_once: true
+
+      # As the first instance is now unsealed the other instances will now need some
+      # time to connect before we can proceed.
+    - name: Wait for OpenBao Raft peers to connect
+      ansible.builtin.wait_for:
+        timeout: 30
+      delegate_to: localhost
+
+      # Raft peers take few seconds before they report an unsealed state therefore
+      # we must wait.
+    - name: Unseal vault
+      ansible.builtin.include_role:
+        name: vault_unseal
+      vars:
+        vault_api_addr: "{{ openbao_api_addr }}"
+        vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+        vault_unseal_timeout: 10
+
+- name: Deploy HA OpenBao
+  gather_facts: true
+  hosts: openbao_ha
+  run_once: true
+  vars:
+    openbao_log_keys: true
+    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
+    openbao_set_keys_fact: true
+    openbao_write_keys_file: true
+  tasks:
+    - name: Include OpenBao keys
+      ansible.builtin.include_vars:
+        file: "bao-keys.json"
+        name: openbao_keys
+
+    - name: Configure PKI - create root/intermediate and generate certificates
+      vars:
+        vault_pki_certificate_subject:
+          - role: 'ServerCert'
+            common_name: "OS-CERT-TEST"
+            extra_params:
+              ttl: "8760h"
+              ip_sans: "127.0.0.1"
+              alt_names: "example.com"
+              exclude_cn_from_sans: true
+        vault_pki_certificates_directory: "/tmp/"
+        vault_pki_generate_certificates: true
+        vault_pki_intermediate_ca_name: "OS-TLS-INT"
+        vault_pki_intermediate_create: true
+        vault_pki_intermediate_roles:
+          - name: "ServerCert"
+            config:
+              max_ttl: 8760h
+              ttl: 8760h
+              allow_any_name: true
+              allow_ip_sans: true
+              require_cn: false
+              server_flag: true
+              key_type: rsa
+              key_bits: 4096
+              country: ["UK"]
+              locality: ["Bristol"]
+              organization: ["StackHPC"]
+              ou: ["HPC"]
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_root_create: true
+        vault_pki_write_certificate_files: true
+        vault_pki_write_int_ca_to_file: true
+        vault_pki_write_pem_bundle: false
+        vault_pki_write_root_ca_to_file: true
+        vault_api_addr: "{{ openbao_api_addr }}"
+        vault_token: "{{ openbao_keys.root_token }}"
+      block:
+        - name: Configure PKI - create root/intermediate and generate certificates
+          ansible.builtin.include_role:
+            name: vault_pki
+
+        - name: Configure PKI - create root/intermediate and generate certificates (idempotence test)
+          ansible.builtin.include_role:
+            name: vault_pki
+
+    - name: Configure PKI - generate certificate pem bundle
+      vars:
+        vault_pki_certificate_subject:
+          - role: 'ServerCert'
+            common_name: "OS-CERT-TEST2"
+            extra_params:
+              ttl: "8760h"
+              ip_sans: "192.168.38.72"
+              exclude_cn_from_sans: true
+        vault_pki_certificates_directory: "/tmp/"
+        vault_pki_generate_certificates: true
+        vault_pki_intermediate_ca_name: "OS-TLS-INT"
+        vault_pki_intermediate_create: false
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_root_create: false
+        vault_pki_write_certificate_files: true
+        vault_pki_write_pem_bundle: true
+        vault_api_addr: "{{ openbao_api_addr }}"
+        vault_token: "{{ openbao_keys.root_token }}"
+      block:
+        - name: Configure PKI - generate certificate pem bundle
+          ansible.builtin.include_role:
+            name: vault_pki
+
+        - name: Configure PKI - generate certificate pem bundle (idempotence test)
+          ansible.builtin.include_role:
+            name: vault_pki
+
+    - name: Validate if certificates exist
+      ansible.builtin.stat:
+        path: "/tmp/{{ item }}"
+      register: stat_result
+      failed_when: not stat_result.stat.exists
+      loop:
+        - OS-CERT-TEST.crt
+        - OS-CERT-TEST2.pem
+
+    - name: Concatenate CAs
+      ansible.builtin.shell: |
+        cat /tmp/OS-TLS-ROOT.pem /tmp/OS-TLS-INT.crt > /tmp/CA-CHAIN.pem
+      args:
+        executable: /bin/bash
+      become: true
+      changed_when: true
+
+    - name: Verify certificate chain
+      ansible.builtin.command: |
+        openssl verify -CAfile /tmp/CA-CHAIN.pem
+        /tmp/{{ item }}
+      register: verify_result
+      failed_when: verify_result.rc != 0
+      loop:
+        - OS-CERT-TEST.crt
+        - OS-CERT-TEST2.pem
+      changed_when: false

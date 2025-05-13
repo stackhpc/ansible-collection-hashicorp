@@ -24,6 +24,7 @@ jobs:
             ansible_version: "2.18"
         type:
           - openbao
+          - openbao_ha
           - vault
     steps:
       - name: Github Checkout 🛎

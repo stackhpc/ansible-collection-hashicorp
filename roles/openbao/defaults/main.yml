@@ -46,7 +46,7 @@ openbao_config: >
     }],
     "storage": {
       "raft": {
-        "node_id": "raft_{{ ansible_facts.nodename }}",
+        "node_id": "raft_{{ inventory_hostname }}",
         "path": "/openbao/file",
         {% if openbao_raft_leaders | length > 0 %}
         "retry_join": {

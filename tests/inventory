@@ -3,3 +3,8 @@ localhost ansible_connection=local
 
 [openbao]
 localhost ansible_connection=local
+
+[openbao_ha]
+raft_01 ansible_connection=local openbao_bind_addr=127.0.0.1 openbao_docker_name=bao_01 openbao_config_dir=/etc/bao_01
+raft_02 ansible_connection=local openbao_bind_addr=127.0.0.2 openbao_docker_name=bao_02 openbao_config_dir=/etc/bao_02
+raft_03 ansible_connection=local openbao_bind_addr=127.0.0.3 openbao_docker_name=bao_03 openbao_config_dir=/etc/bao_03
