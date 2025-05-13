@@ -23,7 +23,7 @@ Role variables
     * `openbao_cluster_name`: OpenBao cluster name (e.g. "prod_cluster")
     * `openbao_config_dir`: Directory into which to bind mount OpenBao configuration
   * Optional
-    * `openbao_bind_address`: Which IP address should OpenBao bind to (default: "127.0.0.1")
+    * `openbao_bind_addr`: Which IP address should OpenBao bind to (default: "127.0.0.1")
     * `openbao_api_addr`: OpenBao [API addr](https://openbao.org/docs/configuration/#high-availability-parameters) - Full URL including protocol and port (default: "http://127.0.0.1:8200")
     * `openbao_init_addr`: OpenBao init addr (used only for initialisation purposes) - full URL including protocol and port (default: "http://127.0.0.1:8200")
     * `openbao_docker_name`: Docker - under which name to run the OpenBao image (default: "bao")
@@ -38,6 +38,7 @@ Role variables
     * `openbao_write_keys_file`: Whether to write the root token and unseal keys to a file. Default `false`
     * `openbao_write_keys_file_host`: Host on which to write root token and unseal keys. Default `localhost`
     * `openbao_write_keys_file_path`: Path of file to write root token and unseal keys. Default `bao-keys.json`
+    * `openbao_raft_leaders`: List of IPs belonging to Raft leaders. Expected that the first and only entry is the IP address of the first OpenBao instance as this would be initialised whereas as the others will not.
 
 Root and unseal keys
 --------------------

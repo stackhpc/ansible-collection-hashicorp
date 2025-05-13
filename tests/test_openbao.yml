@@ -5,7 +5,8 @@
   vars:
     openbao_config_dir: "/etc/openbao"
     openbao_log_keys: true
-    openbao_api_addr: "{{ 'http' ~ '://' ~ '127.0.0.1' ~ ':8200' }}"
+    openbao_bind_addr: "127.0.0.1"
+    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
     openbao_set_keys_fact: true
     openbao_write_keys_file: true
   tasks:
