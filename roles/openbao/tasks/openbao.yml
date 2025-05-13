@@ -12,6 +12,7 @@
     restart_policy: "always"
     env:
       BAO_LOCAL_CONFIG: "{{ openbao_config | to_json }}"
+      BAO_ADDR: "{{ openbao_api_addr }}"
     command: >
       server
   become: true
