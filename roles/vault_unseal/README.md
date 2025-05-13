@@ -28,6 +28,7 @@ Role variables
 * `vault_unseal_token`: Token for Vault
 * `vault_unseal_username`: Username to login to Vault
 * `vault_unseal_verify`: If set, do not verify presented TLS certificate before communicating with Vault server.
+* `vault_unseal_timeout`: Control the delay between unsealing the vault and checking its status. Defaults to `0` seconds
 
 Example playbook
 ----------------
