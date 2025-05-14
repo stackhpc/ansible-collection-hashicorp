@@ -38,6 +38,7 @@ Role variables
     * `openbao_write_keys_file`: Whether to write the root token and unseal keys to a file. Default `false`
     * `openbao_write_keys_file_host`: Host on which to write root token and unseal keys. Default `localhost`
     * `openbao_write_keys_file_path`: Path of file to write root token and unseal keys. Default `bao-keys.json`
+    * `openbao_enable_ui`: Whether to enable user interface that could be accessed from the `openbao_api_addr`. Default `false` 
 
 Root and unseal keys
 --------------------
