@@ -1,14 +1,18 @@
 ---
-- name: Prepare for openbao role
+- name: Deploy HA OpenBao
   gather_facts: true
-  hosts: openbao
+  hosts: openbao_ha
   vars:
-    openbao_config_dir: "/etc/openbao"
     openbao_log_keys: true
-    openbao_bind_addr: "127.0.0.1"
     openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
     openbao_set_keys_fact: true
     openbao_write_keys_file: true
+    openbao_raft_leaders:
+      - "127.0.0.1"
+    _openbao_default_volumes:
+      - "{{ openbao_config_dir }}/config:/openbao/config"
+      - "{{ openbao_config_dir }}/openbao_file:/openbao/file"
+      - "{{ openbao_config_dir }}/openbao_logs:/openbao/logs"
   tasks:
     - name: Debug
       ansible.builtin.debug:
@@ -29,12 +33,48 @@
       ansible.builtin.include_role:
         name: openbao
 
+      # As this test is evaluating OpenBao configured for high availability backed
+      # by `Raft` we must first ensure that the primary or leader instance is unsealed
+      # before attempting to unseal the other members.
     - name: Unseal vault
       ansible.builtin.include_role:
         name: vault_unseal
       vars:
         vault_api_addr: "{{ openbao_api_addr }}"
         vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+      run_once: true
+
+      # As the first instance is now unsealed the other instances will now need some
+      # time to connect before we can proceed.
+    - name: Wait for OpenBao Raft peers to connect
+      ansible.builtin.wait_for:
+        timeout: 30
+      delegate_to: localhost
+
+      # Raft peers take few seconds before they report an unsealed state therefore
+      # we must wait.
+    - name: Unseal vault
+      ansible.builtin.include_role:
+        name: vault_unseal
+      vars:
+        vault_api_addr: "{{ openbao_api_addr }}"
+        vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+        vault_unseal_timeout: 10
+
+- name: Deploy HA OpenBao
+  gather_facts: true
+  hosts: openbao_ha
+  run_once: true
+  vars:
+    openbao_log_keys: true
+    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
+    openbao_set_keys_fact: true
+    openbao_write_keys_file: true
+  tasks:
+    - name: Include OpenBao keys
+      ansible.builtin.include_vars:
+        file: "bao-keys.json"
+        name: openbao_keys
 
     - name: Configure PKI - create root/intermediate and generate certificates
       vars:

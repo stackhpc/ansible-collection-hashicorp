@@ -7,17 +7,24 @@ openbao_docker_name: "openbao"
 openbao_docker_image: "openbao/openbao"
 openbao_docker_tag: "latest"
 
+openbao_config_dir: ""
+
 openbao_cluster_name: ""
-openbao_protocol: "{{ 'https' if openbao_tls_key and openbao_tls_cert else 'http' }}"
-# Allow openbao_vip_url and openbao_vip_address for backwards compatibility.
-openbao_vip_address: "{{ openbao_vip_url | default(openbao_bind_address) }}"
-openbao_api_addr: "{{ openbao_protocol ~ '://' ~ openbao_vip_address ~ ':8200' }}"
-openbao_bind_address: "127.0.0.1"
-openbao_init_addr: "http://127.0.0.1:8200"
+
 openbao_tls_key: ""
 openbao_tls_cert: ""
 
-openbao_config_dir: ""
+openbao_protocol: "{{ 'https' if openbao_tls_key and openbao_tls_cert else 'http' }}"
+
+openbao_api_addr: "{{ openbao_bind_addr ~ ':' ~ openbao_api_port }}"
+openbao_bind_addr: "127.0.0.1"
+openbao_init_addr: "{{ openbao_api_addr }}"
+openbao_cluster_addr: "{{ openbao_bind_addr ~ ':' ~ openbao_cluster_port }}"
+
+openbao_api_port: 8200
+openbao_cluster_port: 8201
+
+openbao_raft_leaders: []
 
 openbao_enable_ui: false
 
@@ -26,10 +33,10 @@ openbao_config: >
     "cluster_name": "{{ openbao_cluster_name }}",
     "ui": "{{ openbao_enable_ui }}",
     "api_addr": "{{ openbao_api_addr }}",
-    "cluster_addr": "http://127.0.0.1:8201",
+    "cluster_addr": "{{ openbao_protocol }}://{{ openbao_cluster_addr }}",
     "listener": [{
       "tcp": {
-        "address": "{{ openbao_bind_address }}:8200",
+        "address": "{{ openbao_bind_addr }}:{{ openbao_api_port }}",
         {% if openbao_tls_key and openbao_tls_cert %}
         "tls_min_version": "tls12",
         "tls_key_file": "/openbao/config/{{ openbao_tls_key }}",
@@ -37,19 +44,17 @@ openbao_config: >
         {% else %}
         "tls_disable": "true"
         {% endif %}
-      }{% if openbao_bind_address != '127.0.0.1' %},
-    },
-    {
-      "tcp": {
-        "address": "127.0.0.1:8200",
-        "tls_disable": "true"
       }
-    {% endif %}
     }],
     "storage": {
-    "raft": {
-       "node_id": "raft_{{ ansible_facts.nodename }}",
-       "path": "/openbao/file"
+      "raft": {
+        "node_id": "raft_{{ inventory_hostname }}",
+        "path": "/openbao/file",
+        {% if openbao_raft_leaders | length > 0 %}
+        "retry_join": {
+          "leader_api_addr": "{{ openbao_protocol }}://{{ openbao_raft_leaders | first }}:{{ openbao_api_port }}"
+        }
+        {% endif %}
       }
     },
     "telemetry": {
