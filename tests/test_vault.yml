@@ -20,7 +20,7 @@
       include_role:
         name: vault
 
-    - name: Include vault role (idemoptence test)
+    - name: Include vault role (idempotence test)
       include_role:
         name: vault
 
