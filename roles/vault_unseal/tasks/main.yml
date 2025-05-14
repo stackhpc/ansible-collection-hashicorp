@@ -21,6 +21,11 @@
     username: "{{ vault_unseal_username | default(omit) }}"
     verify: "{{ vault_unseal_verify | default(omit) }}"
 
+- name: Wait for vault to be unsealed
+  wait_for:
+    timeout: "{{ vault_unseal_timeout | default(0) }}"
+  delegate_to: localhost
+
 - name: Check if vault is sealed
   uri:
     url: "{{ vault_api_addr }}/v1/sys/seal-status"
