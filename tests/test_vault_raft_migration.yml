@@ -1,0 +1,182 @@
+---
+- name: Prepare for vault role
+  gather_facts: true
+  hosts: consul
+  vars:
+    vault_config_dir: "/etc/vault"
+    vault_log_keys: true
+    vault_protocol: http
+    vault_set_keys_fact: true
+    vault_write_keys_file: true
+  tasks:
+    - name: Ensure /etc/vault exists
+      file:
+        path: /etc/vault
+        state: directory
+        mode: "0700"
+      become: true
+
+    - name: Include vault role
+      include_role:
+        name: vault
+
+    - name: Include vault role (idempotence test)
+      include_role:
+        name: vault
+
+    - name: Include Vault keys
+      ansible.builtin.include_vars:
+        file: "vault-keys.json"
+        name: vault_keys
+
+    - name: Unseal vault
+      include_role:
+        name: vault_unseal
+      vars:
+        vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
+
+    - name: Configure PKI - create root/intermediate and generate certificates
+      vars:
+        vault_pki_certificate_subject:
+          - role: 'ServerCert'
+            common_name: "OS-CERT-TEST"
+            extra_params:
+              ttl: "8760h"
+              ip_sans: "127.0.0.1"
+              alt_names: "example.com"
+              exclude_cn_from_sans: true
+        vault_pki_certificates_directory: "/tmp/"
+        vault_pki_generate_certificates: true
+        vault_pki_intermediate_ca_name: "OS-TLS-INT"
+        vault_pki_intermediate_create: true
+        vault_pki_intermediate_roles:
+          - name: "ServerCert"
+            config:
+              max_ttl: 8760h
+              ttl: 8760h
+              allow_any_name: true
+              allow_ip_sans: true
+              require_cn: false
+              server_flag: true
+              key_type: rsa
+              key_bits: 4096
+              country: ["UK"]
+              locality: ["Bristol"]
+              organization: ["StackHPC"]
+              ou: ["HPC"]
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_root_create: true
+        vault_pki_write_certificate_files: true
+        vault_pki_write_int_ca_to_file: true
+        vault_pki_write_pem_bundle: false
+        vault_pki_write_root_ca_to_file: true
+        vault_token: "{{ vault_keys.root_token }}"
+      block:
+        - name: Configure PKI - create root/intermediate and generate certificates
+          include_role:
+            name: vault_pki
+
+        - name: Configure PKI - create root/intermediate and generate certificates (idempotence test)
+          include_role:
+            name: vault_pki
+
+    - name: Configure PKI - generate certificate pem bundle
+      vars:
+        vault_pki_certificate_subject:
+          - role: 'ServerCert'
+            common_name: "OS-CERT-TEST2"
+            extra_params:
+              ttl: "8760h"
+              ip_sans: "192.168.38.72"
+              exclude_cn_from_sans: true
+        vault_pki_certificates_directory: "/tmp/"
+        vault_pki_generate_certificates: true
+        vault_pki_intermediate_ca_name: "OS-TLS-INT"
+        vault_pki_intermediate_create: false
+        vault_pki_root_ca_name: "OS-TLS-ROOT"
+        vault_pki_root_create: false
+        vault_pki_write_certificate_files: true
+        vault_pki_write_pem_bundle: true
+        vault_token: "{{ vault_keys.root_token }}"
+      block:
+        - name: Configure PKI - generate certificate pem bundle
+          include_role:
+            name: vault_pki
+
+        - name: Configure PKI - generate certificate pem bundle (idempotence test)
+          include_role:
+            name: vault_pki
+
+    - name: Validate if certificates exist
+      stat:
+        path: "/tmp/{{ item }}"
+      register: stat_result
+      failed_when: not stat_result.stat.exists
+      loop:
+        - OS-CERT-TEST.crt
+        - OS-CERT-TEST2.pem
+
+    - name: Concatenate CAs
+      shell: |
+        cat /tmp/OS-TLS-ROOT.pem /tmp/OS-TLS-INT.crt > /tmp/CA-CHAIN.pem
+      args:
+        executable: /bin/bash
+      become: true
+      changed_when: true
+
+    - name: Verify certificate chain
+      command: |
+        openssl verify -CAfile /tmp/CA-CHAIN.pem
+        /tmp/{{ item }}
+      register: verify_result
+      failed_when: verify_result.rc != 0
+      loop:
+        - OS-CERT-TEST.crt
+        - OS-CERT-TEST2.pem
+      changed_when: false
+
+    - name: Migrate vault to raft
+      include_role:
+        name: vault
+      vars:
+        vault_storage_type: raft
+        vault_migrate_consul_to_raft: true
+
+    - name: Unseal vault
+      include_role:
+        name: vault_unseal
+      vars:
+        vault_unseal_keys: "{{ vault_keys.keys_base64 }}"
+
+    - name: Validate vault is using raft
+      ansible.builtin.command: >
+        docker exec -e VAULT_ADDR=http://127.0.0.1:8200 vault /bin/sh -c "vault status -format=json"
+      register: vault_status
+      become: true
+      changed_when: false
+
+    - name: Validate vault is using raft
+      ansible.builtin.assert:
+        that:
+          - vault_status.stdout | from_json | json_query('storage_type') == 'raft'
+        fail_msg: "Vault is not using raft storage backend"
+        success_msg: "Vault is using raft storage backend"
+
+    - name: Read CA certificate from vault
+      community.hashi_vault.vault_read:
+        url: http://127.0.0.1:8200
+        path: OS-TLS-ROOT/cert/ca
+        token: "{{ vault_keys.root_token }}"
+      register: vault_ca_cert
+
+    - name: Read CA from file
+      ansible.builtin.slurp:
+        src: /tmp/OS-TLS-ROOT.pem
+      register: ca_chain
+
+    - name: Validate ROOT CA
+      ansible.builtin.assert:
+        that:
+          - vault_ca_cert.data.data.certificate == (ca_chain.content | b64decode).rstrip('\n')
+        fail_msg: "ROOT CA certificate do not match"
+        success_msg: "ROOT CA certificate do match"

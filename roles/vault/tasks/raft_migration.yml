@@ -1,0 +1,26 @@
+---
+- name: Take Consul snapshot
+  ansible.builtin.command: >
+    docker exec {{ consul_docker_name }} /bin/sh -c "consul snapshot save /consul/data/backup_{{ ansible_date_time.iso8601_basic_short }}.snap"
+  become: true
+  register: consul_snapshot
+  changed_when: true
+
+- name: Write migration configuration
+  ansible.builtin.copy:
+    content: "{{ vault_raft_migration_config }}"
+    dest: "{{ vault_config_dir }}/migration.hcl"
+    mode: "0644"
+  become: true
+
+- name: Perform migration
+  ansible.builtin.command: >
+    docker exec {{ vault_docker_name }} /bin/sh -c "vault operator migrate -config /vault/config/migration.hcl"
+  become: true
+  changed_when: true
+
+- name: Change ownership of raft data directory
+  ansible.builtin.command: >
+    docker exec {{ vault_docker_name }} /bin/sh -c "chown -R vault:vault /vault/file"
+  become: true
+  changed_when: true
