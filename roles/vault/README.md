@@ -51,6 +51,9 @@ s (default: Omitted)
     * `vault_write_keys_file`: Whether to write the root token and unseal keys to a file. Default `false`
     * `vault_write_keys_file_host`: Host on which to write root token and unseal keys. Default `localhost`
     * `vault_write_keys_file_path`: Path of file to write root token and unseal keys. Default `vault-keys.json`
+    * `vault_storage_type`: The type of storage to be used by vault either `Consul` or `Raft`. Note if vault is already deployed with `Consul` then you can change this inconjunction with `vault_migrate_consul_to_raft` to perform a one-way migration from `Consul` to `Raft`. Default `consul`.
+    * `vault_migrate_consul_to_raft`: if set true perform the necessary steps to convert the storage backend from `Consul` to `Raft`. Default `false`
+    * `vault_raft_leaders`: List of IPs belonging to Raft leaders. Expected that the first and only entry is the IP address of the first Vault instance as this would be initialised whereas as the others will not.
 
 Root and unseal keys
 --------------------
