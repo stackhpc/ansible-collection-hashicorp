@@ -163,9 +163,10 @@
         success_msg: "Vault is using raft storage backend"
 
     - name: Read CA certificate from vault
-      community.hashi_vault.vault_read:
+      hashivault_read:
         url: http://127.0.0.1:8200
-        path: OS-TLS-ROOT/cert/ca
+        mount_point: OS-TLS-ROOT
+        secret: cert/ca
         token: "{{ vault_keys.root_token }}"
       register: vault_ca_cert
 
@@ -177,6 +178,6 @@
     - name: Validate ROOT CA
       ansible.builtin.assert:
         that:
-          - vault_ca_cert.data.data.certificate == (ca_chain.content | b64decode).rstrip('\n')
+          - vault_ca_cert.value.certificate == (ca_chain.content | b64decode).rstrip('\n')
         fail_msg: "ROOT CA certificate do not match"
         success_msg: "ROOT CA certificate do match"
