@@ -1,7 +1,7 @@
 ---
 - name: Take Consul snapshot
   ansible.builtin.command: >
-    docker exec {{ consul_docker_name }} /bin/sh -c "consul snapshot save /consul/data/backup_{{ ansible_date_time.iso8601_basic_short }}.snap"
+    docker exec {{ consul_docker_name }} /bin/sh -c "consul snapshot save /consul/data/backup_{{ ansible_facts.date_time.iso8601_basic_short }}.snap"
   become: true
   register: consul_snapshot
   changed_when: true
