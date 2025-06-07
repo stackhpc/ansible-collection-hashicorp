@@ -33,6 +33,7 @@ Role variables
     * `openbao_ca_cert`: Path to CA certificate used to verify OpenBao server TLS cert
     * `openbao_tls_key`: Path to TLS key to use by OpenBao
     * `openbao_tls_cert`: Path to TLS cert to use by OpenBao
+    * `openbao_tls_ca`: Path to TLS CA certificate that can be used by peers to validate the leaders TLS
     * `openbao_log_keys`: Whether to log the root token and unseal keys in the Ansible output. Default `false`
     * `openbao_set_keys_fact`: Whether to set a `openbao_keys` fact containing the root token and unseal keys. Default `false`
     * `openbao_write_keys_file`: Whether to write the root token and unseal keys to a file. Default `false`
