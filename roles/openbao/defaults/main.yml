@@ -44,7 +44,14 @@ openbao_config: >
         {% else %}
         "tls_disable": "true"
         {% endif %}
+      }{% if not openbao_bind_addr.startswith('127.') %},
+    },
+    {
+      "tcp": {
+        "address": "127.0.0.1:8200",
+        "tls_disable": "true"
       }
+    {% endif %}
     }],
     "storage": {
       "raft": {
