@@ -13,6 +13,7 @@ openbao_cluster_name: ""
 
 openbao_tls_key: ""
 openbao_tls_cert: ""
+openbao_tls_ca: ""
 
 openbao_protocol: "{{ 'https' if openbao_tls_key and openbao_tls_cert else 'http' }}"
 
@@ -59,7 +60,9 @@ openbao_config: >
         "path": "/openbao/file",
         {% if openbao_raft_leaders | length > 0 %}
         "retry_join": {
-          "leader_api_addr": "{{ openbao_protocol }}://{{ openbao_raft_leaders | first }}:{{ openbao_api_port }}"
+          "leader_api_addr": "{{ openbao_protocol }}://{{ openbao_raft_leaders | first }}:{{ openbao_api_port }}"{% if openbao_tls_ca %},
+          "leader_ca_cert_file": "/openbao/config/{{ openbao_tls_ca }}"
+          {% endif %}
         }
         {% endif %}
       }
