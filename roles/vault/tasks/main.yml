@@ -8,5 +8,9 @@
 - name: "Deploy Consul"
   import_tasks: consul.yml
 
+- name: "Migrate from Consul to Raft"
+  import_tasks: raft_migration.yml
+  when: vault_migrate_consul_to_raft | bool
+
 - name: "Deploy Vault"
   import_tasks: vault.yml
