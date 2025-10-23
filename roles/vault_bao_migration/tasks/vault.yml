@@ -1,0 +1,12 @@
+---
+- name: Halty Vaulty
+  docker_container:
+    name: "{{ vault_docker_name }}"
+    state: absent
+  become: true
+
+- name: Cancel Consul
+  docker_container:
+    name: "{{ consul_docker_name }}"
+    state: absent
+  become: true

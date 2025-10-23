@@ -1,0 +1,246 @@
+---
+openbao_registry_url: ""
+openbao_registry_username: ""
+openbao_registry_password: ""
+
+openbao_docker_name: "openbao"
+openbao_docker_image: "openbao/openbao"
+openbao_docker_tag: "latest"
+
+openbao_config_dir: ""
+
+openbao_cluster_name: ""
+
+openbao_tls_key: ""
+openbao_tls_cert: ""
+openbao_tls_ca: ""
+
+openbao_protocol: "{{ 'https' if openbao_tls_key and openbao_tls_cert else 'http' }}"
+
+openbao_api_addr: "{{ openbao_bind_addr ~ ':' ~ openbao_api_port }}"
+openbao_bind_addr: "127.0.0.1"
+openbao_init_addr: "{{ openbao_api_addr }}"
+openbao_cluster_addr: "{{ openbao_bind_addr ~ ':' ~ openbao_cluster_port }}"
+
+openbao_api_port: 8200
+openbao_cluster_port: 8201
+
+# Staging directory for Vault migration
+vault_staging_dir_path: /var/lib/vault-migration
+
+openbao_raft_leaders: []
+
+openbao_enable_ui: false
+
+
+vault_raft_config: >
+  {
+    "cluster_name": "{{ vault_cluster_name }}",
+    "ui": true,
+    "api_addr": "{{ vault_api_addr }}",
+    "listener": [{
+      "tcp": {
+        "address": "{{ vault_bind_address }}:8200",
+        {% if vault_tls_key and vault_tls_cert %}
+        "tls_min_version": "tls12",
+        "tls_key_file": "/vault/config/{{ vault_tls_key }}",
+        "tls_cert_file": "/vault/config/{{ vault_tls_cert }}"
+        {% else %}
+        "tls_disable": "true"
+        {% endif %}
+      }{% if vault_bind_address != '127.0.0.1' %},
+    },
+    {
+      "tcp": {
+        "address": "127.0.0.1:8200",
+        "tls_disable": "true"
+      }
+    {% endif %}
+    }],
+    "storage": {
+      "raft": {
+        "path": "/vault/file/",
+        "node_id": "raft_{{ inventory_hostname }}"
+      }
+    },
+    "telemetry": {
+      "prometheus_retention_time": "30s",
+      "disable_hostname": true
+    }
+  }
+
+openbao_config: >
+  {
+    "cluster_name": "{{ openbao_cluster_name }}",
+    "ui": "{{ openbao_enable_ui }}",
+    "api_addr": "{{ openbao_api_addr }}",
+    "cluster_addr": "{{ openbao_protocol }}://{{ openbao_cluster_addr }}",
+    "listener": [{
+      "tcp": {
+        "address": "{{ openbao_bind_addr }}:{{ openbao_api_port }}",
+        {% if openbao_tls_key and openbao_tls_cert %}
+        "tls_min_version": "tls12",
+        "tls_key_file": "/openbao/config/{{ openbao_tls_key }}",
+        "tls_cert_file": "/openbao/config/{{ openbao_tls_cert }}"
+        {% else %}
+        "tls_disable": "true"
+        {% endif %}
+      }{% if not openbao_bind_addr.startswith('127.') %},
+    },
+    {
+      "tcp": {
+        "address": "127.0.0.1:8200",
+        "tls_disable": "true"
+      }
+    {% endif %}
+    }],
+    "storage": {
+      "raft": {
+        "node_id": "raft_{{ inventory_hostname }}",
+        "path": "/openbao/file",
+        {% if openbao_raft_leaders | length > 0 %}
+        "retry_join": {
+          "leader_api_addr": "{{ openbao_protocol }}://{{ openbao_raft_leaders | first }}:{{ openbao_api_port }}"{% if openbao_tls_ca %},
+          "leader_ca_cert_file": "/openbao/config/{{ openbao_tls_ca }}"
+          {% endif %}
+        }
+        {% endif %}
+      }
+    },
+    "telemetry": {
+      "prometheus_retention_time": "30s",
+      "disable_hostname": true
+    }
+  }
+
+# Docker options
+openbao_container: {}
+
+# Docker volumes
+# Default volume mapping
+_openbao_default_volumes:
+  - "{{ openbao_config_dir | default('openbao_config', true) }}:/openbao/config"
+  - "openbao_file:/openbao/file"
+  - "openbao_logs:/openbao/logs"
+
+# Exposed for playbooks to access later
+openbao_extra_volumes: []
+
+# Combined volume lists
+_openbao_volumes: "{{ _openbao_default_volumes + openbao_extra_volumes }}"
+
+# Whether to log the root token and unseal keys in the Ansible output.
+openbao_log_keys: false
+
+# Whether to set a openbao_keys fact containing the root token and unseal keys.
+openbao_set_keys_fact: false
+
+# Whether to write the root token and unseal keys to a file.
+openbao_write_keys_file: false
+# Host on which to write root token and unseal keys.
+openbao_write_keys_file_host: localhost
+# Path of file to write root token and unseal keys.
+openbao_write_keys_file_path: bao-keys.json
+
+
+
+
+
+hashicorp_registry_url: ""
+hashicorp_registry_username: ""
+hashicorp_registry_password: ""
+
+consul_docker_name: "consul"
+consul_docker_image: "hashicorp/consul"
+consul_docker_tag: "latest"
+consul_docker_volume: "consul_data"
+
+vault_docker_name: "vault"
+vault_docker_image: "hashicorp/vault"
+vault_docker_tag: "latest"
+
+vault_cluster_name: ""
+vault_protocol: "{{ 'https' if vault_tls_key and vault_tls_cert else 'http' }}"
+# Allow vault_vip_url and vault_vip_address for backwards compatibility.
+vault_vip_address: "{{ vault_vip_url | default(vault_bind_address) }}"
+vault_api_addr: "{{ vault_protocol ~ '://' ~ vault_vip_address ~ ':8200' }}"
+vault_bind_address: "127.0.0.1"
+vault_init_addr: "http://127.0.0.1:8200"
+vault_tls_key: ""
+vault_tls_cert: ""
+
+vault_config_dir: ""
+
+vault_config: >
+  {
+    "cluster_name": "{{ vault_cluster_name }}",
+    "ui": true,
+    "api_addr": "{{ vault_api_addr }}",
+    "listener": [{
+      "tcp": {
+        "address": "{{ vault_bind_address }}:8200",
+        {% if vault_tls_key and vault_tls_cert %}
+        "tls_min_version": "tls12",
+        "tls_key_file": "/vault/config/{{ vault_tls_key }}",
+        "tls_cert_file": "/vault/config/{{ vault_tls_cert }}"
+        {% else %}
+        "tls_disable": "true"
+        {% endif %}
+      }{% if vault_bind_address != '127.0.0.1' %},
+    },
+    {
+      "tcp": {
+        "address": "127.0.0.1:8200",
+        "tls_disable": "true"
+      }
+    {% endif %}
+    }],
+    "storage": {
+    "consul": {
+       "address": "127.0.0.1:{{ consul_bind_port }}",
+       "path": "vault/"
+      }
+    },
+    "telemetry": {
+      "prometheus_retention_time": "30s",
+      "disable_hostname": true
+    }
+  }
+
+consul_bind_interface: "lo"
+consul_bind_ip: "{{ hostvars[inventory_hostname].ansible_facts[consul_bind_interface].ipv4.address }}"
+consul_bind_port: "8500"
+
+# Docker options
+vault_container: {}
+consul_container: {}
+
+# Docker volumes
+# Default volume mapping
+_vault_default_volumes:
+  - "{{ vault_config_dir }}:/vault/config"
+  - "vault_file:/vault/file"
+  - "vault_logs:/vault/logs"
+_consul_default_volumes:
+  - "{{ consul_docker_volume }}:/consul/data"
+
+# Exposed for playbooks to access later
+vault_extra_volumes: []
+consul_extra_volumes: []
+
+# Combined volume lists
+_vault_volumes: "{{ _vault_default_volumes + vault_extra_volumes }}"
+_consul_volumes: "{{ _consul_default_volumes + consul_extra_volumes }}"
+
+# Whether to log the root token and unseal keys in the Ansible output.
+vault_log_keys: false
+
+# Whether to set a vault_keys fact containing the root token and unseal keys.
+vault_set_keys_fact: false
+
+# Whether to write the root token and unseal keys to a file.
+vault_write_keys_file: false
+# Host on which to write root token and unseal keys.
+vault_write_keys_file_host: localhost
+# Path of file to write root token and unseal keys.
+vault_write_keys_file_path: vault-keys.json
