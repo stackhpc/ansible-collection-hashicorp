@@ -1,0 +1,67 @@
+---
+- name: Ensure Vault staging directory exists
+  ansible.builtin.file:
+    path: "{{ vault_staging_dir_path }}"
+    state: directory
+    mode: '0777'
+  become: true
+
+- name: Take snapshot of Consul data
+  community.docker.docker_container_exec:
+    command: "consul snapshot save consul-snapshot.snap"
+    container: "{{ consul_docker_name }}"
+
+- name: Copy Consul snapshot to host
+  # NOTE: No module to copy from container to host, so using command
+  ansible.builtin.command:
+    cmd: "docker cp consul:/consul-snapshot.snap {{ vault_staging_dir_path }}"
+  become: true
+
+- name: Template out migration file
+  ansible.builtin.template:
+    src: vault-bao-migration.hcl.j2
+    dest: "{{ vault_staging_dir_path }}/vault-bao-migration.hcl"
+
+- name: Copy migration file into Vault container
+  community.docker.docker_container_copy_into:
+    container: "{{ vault_docker_name }}"
+    path: "{{ vault_staging_dir_path }}/vault-bao-migration.hcl"
+    container_path: "/vault-bao-migration.hcl"
+
+- name: Migrate to Raft backend
+  community.docker.docker_container_exec:
+    command: "vault operator migrate -config=/vault-bao-migration.hcl"
+    container: "{{ vault_docker_name }}"
+
+# - name: Start Vault container with Raft backend
+#   docker_container:
+#     name: "{{ vault_docker_name }}"
+#     image: "{{ vault_docker_image }}:{{ vault_docker_tag }}"
+#     network_mode: host
+#     etc_hosts: "{{ vault_container.etc_hosts | default(omit) }}"
+#     capabilities: IPC_LOCK
+#     volumes: "{{ _vault_volumes }}"
+#     comparisons:
+#       '*': strict
+#     restart_policy: "always"
+#     env:
+#       VAULT_LOCAL_CONFIG: "{{ vault_raft_config | to_json }}"
+#       # VAULT_LOCAL_CONFIG: "{{ vault_config | to_json }}"
+#     command: >
+#       server
+#   become: true
+
+# - name: Apply Vault Unseal role
+#   ansible.builtin.import_role:
+#     name: stackhpc.hashicorp.vault_unseal
+
+# - name: Take snapshot of Raft data
+#   community.docker.docker_container_exec:
+#     command: "vault operator raft snapshot save raft-snapshot.snap"
+#     container: "{{ vault_docker_name }}"
+
+# - name: Copy Raft snapshot to host
+#   # NOTE: No module to copy from container to host, so using command
+#   ansible.builtin.command:
+#     cmd: "docker cp vault:/raft-snapshot.snap {{ vault_staging_dir_path }}"
+#   become: true
