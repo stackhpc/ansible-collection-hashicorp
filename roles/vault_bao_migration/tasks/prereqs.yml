@@ -1,0 +1,8 @@
+---
+- name: Log into Docker registry
+  docker_login:
+    registry: "{{ openbao_registry_url }}"
+    username: "{{ openbao_registry_username }}"
+    password: "{{ openbao_registry_password }}"
+  when: openbao_registry_username | length > 0
+  become: true

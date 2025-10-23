@@ -1,0 +1,12 @@
+---
+- name: "Vault Prerequisites"
+  import_tasks: prereqs.yml
+
+- name: "Migrate to Raft"
+  import_tasks: raft.yml
+
+# - name: "Stop Vault"
+#   import_tasks: vault.yml
+
+# - name: "Deploy OpenBao"
+#   import_tasks: openbao.yml
