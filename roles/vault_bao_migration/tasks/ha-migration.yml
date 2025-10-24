@@ -1,0 +1,33 @@
+---
+# HA migration of Vault to OpenBao
+# Generally following the upstream docs: https://github.com/openbao/openbao/pull/1155
+# At time of writing the above PR hasn't merged but might be soon
+
+# Ensure backup exists
+# Find the leader
+# Loop through non-leader nodes
+# Stop Vault, Start OpenBao in its place
+# Join the existing cluster
+# Unseal if sealed
+# Ensure it joins the cluster and has become a voter
+# Repeat for all non-leader nodes
+# Force leader to step down
+# Make sure a new leader is elected
+# Run rejoin on former leader node
+
+- name: Ensure Raft Snapshot exists
+  ansible.builtin.stat:
+    path: "{{ vault_staging_dir_path }}/raft-snapshot.snap"
+  register: raft_snapshot_status
+  failed_when: not raft_snapshot_status.stat.exists
+  changed_when: false
+
+- name: Find Vault Raft leader
+  ansible.builtin.command:
+    cmd: >
+      docker exec -e VAULT_TOKEN=$VAULT_TOKEN {{ vault_docker_name }} vault operator raft list-peers -format=json | jq -r '.data.config.servers.[] | select(.leader) | .node_id'
+    env:
+      VAULT_TOKEN: "{{ vault_root_token }}"
+    container: "{{ vault_docker_name }}"
+    register: vault_raft_leader
+  changed_when: false

@@ -1,0 +1,79 @@
+---
+# General plan
+# Ensure snapshot exists
+# Maybe upgrade to known working version of vault
+# Maybe make another snapshot
+# Stop Vault container
+# Deploy OpenBao container with Raft backend
+# Restore snapshot into OpenBao
+# Unseal OpenBao
+
+# TODO upgrade to known working version then re-snapshot
+
+- name: Ensure Raft Snapshot exists
+  ansible.builtin.stat:
+    path: "{{ vault_staging_dir_path }}/raft-snapshot.snap"
+  register: raft_snapshot_status
+  failed_when: not raft_snapshot_status.stat.exists
+  changed_when: false
+
+- name: Stop Vault container
+  community.docker.docker_container:
+    name: "{{ vault_docker_name }}"
+    state: stopped
+  become: true
+
+- name: Apply OpenBao role
+  ansible.builtin.import_role:
+    name: stackhpc.hashicorp.openbao
+  vars:
+    openbao_write_keys_file: false
+    openbao_set_keys_fact: true
+
+- name: Wait for OpenBao to be available
+  ansible.builtin.wait_for:
+    host: "{{ openbao_bind_addr }}"
+    port: "{{ openbao_api_port }}"
+    delay: 3
+    timeout: 30
+
+- name: Unseal Bao with temporary keys
+  ansible.builtin.include_role:
+    name: stackhpc.hashicorp.vault_unseal
+  vars:
+    vault_api_addr: "{{ openbao_api_addr }}"
+    vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+
+- name: Copy migration file into Vault container
+  community.docker.docker_container_copy_into:
+    container: "{{ openbao_docker_name }}"
+    path: "{{ vault_staging_dir_path }}/raft-snapshot.snap"
+    container_path: "/raft-snapshot.snap"
+    # openbao user and group IDs
+    owner_id: 100
+    group_id: 1000
+  become: true
+
+- name: Restore Raft snapshot into OpenBao
+  community.docker.docker_container_exec:
+    command: "vault operator raft snapshot restore -force /raft-snapshot.snap"
+    container: "{{ openbao_docker_name }}"
+    env:
+      VAULT_ADDR: "{{ openbao_api_addr }}"
+      VAULT_TOKEN: "{{ openbao_keys.root_token }}"
+    user: openbao
+
+- name: Wait for OpenBao to be available
+  ansible.builtin.wait_for:
+    host: "{{ openbao_bind_addr }}"
+    port: "{{ openbao_api_port }}"
+    delay: 3
+    timeout: 30
+
+- name: Unseal OpenBao
+  ansible.builtin.import_role:
+    name: stackhpc.hashicorp.vault_unseal
+  vars:
+    vault_api_addr: "{{ openbao_api_addr }}"
+
+- name: Stop an
