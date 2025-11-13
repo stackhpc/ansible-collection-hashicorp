@@ -1,5 +1,5 @@
 storage_source "consul" {
-  "address" = "127.0.0.1:{{ consul_bind_port }}",
+  "address" = "127.0.0.1:{{ migration_consul_bind_port }}",
   "path" = "vault/"
 }
 
@@ -8,4 +8,4 @@ storage_destination "raft" {
   "node_id" = "raft_{{ inventory_hostname }}"
 }
 
-cluster_addr = "{{ openbao_protocol }}://{{ openbao_cluster_addr }}"
+cluster_addr = "{{ migration_common_protocol }}://{{ migration_common_init_addr }}"
