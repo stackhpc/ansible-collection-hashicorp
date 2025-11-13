@@ -6,3 +6,39 @@
     password: "{{ openbao_registry_password }}"
   when: openbao_registry_username | length > 0
   become: true
+
+- name: Ensure jq is installed
+  ansible.builtin.package:
+    name: jq
+    state: present
+  become: true
+
+- name: Find Vault leader
+  ansible.builtin.shell:
+    cmd: >
+      docker exec -e VAULT_TOKEN=$VAULT_TOKEN {{ vault_docker_name }}
+      vault operator members -format=json -address {{ vault_api_addr }} | jq -r '.Nodes[] | select(.active_node) | .hostname'
+  environment:
+    VAULT_TOKEN: "{{ vault_root_token }}"
+  register: vault_raft_leader_query
+  changed_when: false
+  when: vault_raft_leader == ""
+
+- name: Find Vault followers
+  ansible.builtin.shell:
+    cmd: >
+      docker exec -e VAULT_TOKEN=$VAULT_TOKEN {{ vault_docker_name }}
+      vault operator members -format=json -address {{ vault_api_addr }} | jq -r '.Nodes[] | select(.active_node == false) | .hostname'
+  environment:
+    VAULT_TOKEN: "{{ vault_root_token }}"
+  register: vault_raft_followers_query
+  changed_when: false
+  when: vault_raft_followers | length == 0
+
+- name: Set Vault leader
+  ansible.builtin.set_fact:
+    vault_raft_leader: "{{ vault_raft_leader_query.stdout }}"
+
+- name: Set Vault followers
+  ansible.builtin.set_fact:
+   vault_raft_followers: "{{ vault_raft_followers_query.stdout_lines }}"

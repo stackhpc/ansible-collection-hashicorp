@@ -33,6 +33,10 @@ openbao_raft_leaders: []
 openbao_enable_ui: false
 
 vault_raft_leaders: "{{ openbao_raft_leaders }}"
+
+vault_raft_leader: ""
+vault_raft_followers: []
+
 vault_raft_cluster_addr: "{{ openbao_cluster_addr }}"
 vault_tls_key: "{{ openbao_tls_key }}"
 vault_tls_cert: "{{ openbao_tls_cert }}"
