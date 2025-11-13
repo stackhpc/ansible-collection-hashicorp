@@ -6,6 +6,11 @@
 # Redeploy non-leader nodes to join the new OpenBao cluster
 # Add some validation at the end to check all nodes are in the cluster
 
+- name: Fail is no Vault leader was found.
+  fail:
+    msg: No Vault leader was found. Please check the status of the Vault.
+  when: vault_raft_leader == ""
+
 - name: Ensure Vault staging directory exists
   ansible.builtin.file:
     path: "{{ vault_staging_dir_path }}"
@@ -35,55 +40,120 @@
     path: "{{ vault_staging_dir_path }}/vault-bao-migration.hcl"
     container_path: "/vault-bao-migration.hcl"
 
-- name: Migrate to Raft backend
-  community.docker.docker_container_exec:
-    command: "vault operator migrate -config=/vault-bao-migration.hcl"
-    container: "{{ vault_docker_name }}"
-    user: vault
+- name: Migrate Vault leader to Raft backend
+  when: inventory_hostname == vault_raft_leader
+  block:
+    - name: Migrate Vault leader to Raft backend
+      community.docker.docker_container_exec:
+        command: "vault operator migrate -config=/vault-bao-migration.hcl"
+        container: "{{ vault_docker_name }}"
+        user: vault
 
-- name: Start Vault container with Raft backend
-  docker_container:
-    name: "{{ vault_docker_name }}"
-    image: "{{ vault_docker_image }}:{{ vault_docker_tag }}"
-    network_mode: host
-    etc_hosts: "{{ vault_container.etc_hosts | default(omit) }}"
-    capabilities: IPC_LOCK
-    volumes: "{{ _vault_volumes }}"
-    comparisons:
-      '*': strict
-    restart_policy: "always"
-    env:
-      VAULT_LOCAL_CONFIG: "{{ vault_raft_config | to_json }}"
-      # VAULT_LOCAL_CONFIG: "{{ vault_config | to_json }}"
-    command: >
-      server
-  become: true
+    - name: Start Vault leader container with Raft backend
+      docker_container:
+        name: "{{ vault_docker_name }}"
+        image: "{{ vault_docker_image }}:{{ vault_docker_tag }}"
+        network_mode: host
+        etc_hosts: "{{ vault_container.etc_hosts | default(omit) }}"
+        capabilities: IPC_LOCK
+        volumes: "{{ _vault_volumes }}"
+        comparisons:
+          '*': strict
+        restart_policy: "always"
+        env:
+          VAULT_LOCAL_CONFIG: "{{ vault_raft_config | to_json }}"
+          # VAULT_LOCAL_CONFIG: "{{ vault_config | to_json }}"
+        command: >
+          server
+      become: true
 
-- name: Check if vault is initialized
-  uri:
-    url: "{{ vault_init_addr }}/v1/sys/init"
-  register: vault_init_status
-  retries: 50
-  delay: 1
+    - name: Check if vault is initialized
+      uri:
+        url: "{{ vault_init_addr }}/v1/sys/init"
+      register: vault_init_status
+      retries: 50
+      delay: 1
+      until:
+        - vault_init_status.status == 200
+        - vault_init_status.json.initialized
+
+    - name: Apply Vault Unseal role
+      ansible.builtin.import_role:
+        name: stackhpc.hashicorp.vault_unseal
+
+- name: Join Vault followers to Raft
+  when: inventory_hostname in vault_raft_followers
+  block:
+    - name: Start Vault followers with Raft backend
+      community.docker.docker_container:
+        name: "{{ vault_docker_name }}"
+        image: "{{ vault_docker_image }}:{{ vault_docker_tag }}"
+        network_mode: host
+        etc_hosts: "{{ vault_container.etc_hosts | default(omit) }}"
+        capabilities: IPC_LOCK
+        volumes: "{{ _vault_volumes }}"
+        comparisons:
+          '*': strict
+        restart_policy: "always"
+        env:
+          VAULT_LOCAL_CONFIG: "{{ vault_raft_config | to_json }}"
+          # VAULT_LOCAL_CONFIG: "{{ vault_config | to_json }}"
+        command: >
+          server
+      become: true
+
+    - name: Check if vault is initialized
+      uri:
+        url: "{{ vault_init_addr }}/v1/sys/init"
+      register: vault_init_status
+      retries: 50
+      delay: 1
+      until:
+        - vault_init_status.status == 200
+        - vault_init_status.json.initialized
+
+    - name: Apply Vault Unseal role
+      ansible.builtin.import_role:
+        name: stackhpc.hashicorp.vault_unseal
+
+- name: Verify all peers are joined to the cluster
+  when: vault_raft_followers | length > 0
   run_once: true
-  until: vault_init_status.status == 200
+  block:
+    - name: Check the number of the raft peers
+      ansible.builtin.shell:
+        cmd: >
+          docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR -e VAULT_CAPATH=$VAULT_CAPATH {{ vault_docker_name }}
+          vault operator raft list-peers -format=json | jq -r '.data.config.servers | length'
+      register: vault_raft_peer_length
+      environment:
+        VAULT_ADDR: "{{ vault_api_addr }}"
+        VAULT_TOKEN: "{{ vault_root_token }}"
+        VAULT_CAPATH: "/vault/config/{{ vault_tls_ca }}"
+      changed_when: false
 
-- name: Apply Vault Unseal role
-  ansible.builtin.import_role:
-    name: stackhpc.hashicorp.vault_unseal
+    - name: Fail if number of the raft peers does not match number of Vault nodes
+      ansible.builtin.assert:
+        that: (vault_raft_peer_length.stdout | int) == (1 + vault_raft_followers | length)
+        fail_msg: Some Vault nodes failed to join raft peer
 
-- name: Take snapshot of Raft data
-  community.docker.docker_container_exec:
-    command: |
-      vault operator raft snapshot save raft-snapshot.snap
-    container: "{{ vault_docker_name }}"
-    env:
-      VAULT_ADDR: "{{ vault_api_addr }}"
-      VAULT_TOKEN: "{{ vault_root_token }}"
-    user: root
+- name: Backup snapshot of Raft data
+  when: inventory_hostname == vault_raft_leader
+  block:
+    - name: Take snapshot of Raft data
+      community.docker.docker_container_exec:
+        command: |
+          vault operator raft snapshot save raft-snapshot.snap
+        container: "{{ vault_docker_name }}"
+        env:
+          VAULT_ADDR: "{{ vault_api_addr }}"
+          VAULT_TOKEN: "{{ vault_root_token }}"
+          VAULT_CAPATH: "/vault/config/{{ vault_tls_ca }}"
+        user: root
 
-- name: Copy Raft snapshot to host
-  # NOTE: No module to copy from container to host, so using command
-  ansible.builtin.command:
-    cmd: "docker cp vault:/raft-snapshot.snap {{ vault_staging_dir_path }}"
-  become: true
+    - name: Copy Raft snapshot to host
+      # NOTE: No module to copy from container to host, so using command
+      ansible.builtin.command:
+        cmd: "docker cp vault:/raft-snapshot.snap {{ vault_staging_dir_path }}"
+      become: true
+      changed_when: false

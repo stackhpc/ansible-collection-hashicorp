@@ -35,12 +35,14 @@ openbao_enable_ui: false
 vault_raft_leaders: "{{ openbao_raft_leaders }}"
 
 vault_raft_leader: ""
+vault_leader_api_addr: ""
 vault_raft_followers: []
 
 vault_raft_cluster_addr: "{{ openbao_cluster_addr }}"
 vault_tls_key: "{{ openbao_tls_key }}"
 vault_tls_cert: "{{ openbao_tls_cert }}"
 vault_tls_ca: "{{ openbao_tls_ca }}"
+vault_api_port: "{{ openbao_api_port }}"
 
 vault_raft_config: >
   {
@@ -70,9 +72,9 @@ vault_raft_config: >
     "storage": {
       "raft": {
         "path": "/vault/file/",
-        "node_id": "raft_{{ inventory_hostname }}"{% if vault_raft_leaders | length > 0 %},
+        "node_id": "raft_{{ inventory_hostname }}"{% if vault_raft_leader != "" %},
         "retry_join": {
-          "leader_api_addr": "{{ vault_protocol }}://{{ vault_raft_leaders | first }}:{{ vault_api_port }}"{% if vault_tls_ca %},
+          "leader_api_addr": "{{ vault_leader_api_addr }}"{% if vault_tls_ca %},
           "leader_ca_cert_file": "/vault/config/{{ vault_tls_ca }}"
           {% endif %}
         }
