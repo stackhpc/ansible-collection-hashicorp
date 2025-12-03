@@ -7,14 +7,14 @@
 
 - name: "Single Node Migration"
   import_tasks: single-node-migration.yml
-  when: vault_raft_leaders | length == 0
+  when: vault_raft_followers | length == 0
 
 - name: Assert failure
   ansible.builtin.assert:
     that:
       - vault_raft_leaders | length == 0
     fail_msg: "HA Migration not yet supported"
-    
+
 # - name: "HA Migration"
 #   import_tasks: ha-migration.yml
 #   when: vault_raft_leaders | length > 0

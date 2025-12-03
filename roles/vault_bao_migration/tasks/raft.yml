@@ -123,13 +123,15 @@
     - name: Check the number of the raft peers
       ansible.builtin.shell:
         cmd: >
-          docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR -e VAULT_CAPATH=$VAULT_CAPATH {{ vault_docker_name }}
+          docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR
+          {% if vault_tls_ca != "" %} -e VAULT_CAPATH=$VAULT_CAPATH {% endif %}
+          {{ vault_docker_name }}
           vault operator raft list-peers -format=json | jq -r '.data.config.servers | length'
       register: vault_raft_peer_length
       environment:
         VAULT_ADDR: "{{ vault_api_addr }}"
         VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_CAPATH: "/vault/config/{{ vault_tls_ca }}"
+        VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
       changed_when: false
 
     - name: Fail if number of the raft peers does not match number of Vault nodes
@@ -148,7 +150,7 @@
         env:
           VAULT_ADDR: "{{ vault_api_addr }}"
           VAULT_TOKEN: "{{ vault_root_token }}"
-          VAULT_CAPATH: "/vault/config/{{ vault_tls_ca }}"
+          VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
         user: root
 
     - name: Copy Raft snapshot to host
