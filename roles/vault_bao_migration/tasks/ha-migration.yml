@@ -21,13 +21,24 @@
   register: raft_snapshot_status
   failed_when: not raft_snapshot_status.stat.exists
   changed_when: false
+  when: inventory_hostname == vault_raft_leader
 
-- name: Find Vault Raft leader
-  ansible.builtin.command:
-    cmd: >
-      docker exec -e VAULT_TOKEN=$VAULT_TOKEN {{ vault_docker_name }} vault operator raft list-peers -format=json | jq -r '.data.config.servers.[] | select(.leader) | .node_id'
-    env:
-      VAULT_TOKEN: "{{ vault_root_token }}"
-    container: "{{ vault_docker_name }}"
-    register: vault_raft_leader
-  changed_when: false
+- name: Set vault_all list
+  ansible.builtin.set_fact:
+    vault_all: "{{ vault_raft_followers + [vault_raft_leader] }}"
+
+- name: Ensure the leader is the last item of vault_all
+  ansible.builtin.assert:
+    that:
+      - vault_all | last == vault_raft_leader
+
+- name: show vault_all
+  debug:
+    var: vault_all
+
+- name: Migrate the cluster to OpenBao one-by-one
+  include_tasks: openbao.yml
+  loop: "{{ vault_all }}"
+  loop_control:
+    loop_var: vault_host
+  run_once: true

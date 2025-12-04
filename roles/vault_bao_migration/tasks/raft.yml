@@ -159,3 +159,8 @@
         cmd: "docker cp vault:/raft-snapshot.snap {{ vault_staging_dir_path }}"
       become: true
       changed_when: false
+
+- name: Stop Consul
+  community.docker.docker_container:
+    name: "{{ consul_docker_name }}"
+    state: "stopped"

@@ -83,8 +83,3 @@
     name: stackhpc.hashicorp.vault_unseal
   vars:
     vault_api_addr: "{{ openbao_api_addr }}"
-
-- name: Stop Consul
-  community.docker.docker_container:
-    name: "{{ consul_docker_name }}"
-    state: "stopped"

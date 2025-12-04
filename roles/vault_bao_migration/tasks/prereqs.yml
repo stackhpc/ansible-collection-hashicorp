@@ -24,7 +24,6 @@
     VAULT_ADDR: "{{ vault_api_addr }}"
     VAULT_TOKEN: "{{ vault_root_token }}"
     VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-
   register: vault_raft_leader_query
   changed_when: false
   when: vault_raft_leader == ""

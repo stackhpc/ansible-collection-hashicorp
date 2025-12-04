@@ -37,6 +37,7 @@ vault_raft_leaders: "{{ openbao_raft_leaders }}"
 vault_raft_leader: ""
 vault_leader_api_addr: ""
 vault_raft_followers: []
+vault_all: []
 
 vault_raft_cluster_addr: "{{ openbao_cluster_addr }}"
 vault_tls_key: "{{ openbao_tls_key }}"
