@@ -83,7 +83,6 @@
       when: vault_tls_ca
       become: true
 
-
 - name: HA Vault to OpenBao migration except for leader
   hosts: ordered_vault_hosts
   serial: 1
@@ -91,106 +90,111 @@
   vars:
     vault_docker_name: vault
     openbao_docker_name: openbao
-    openbao_raft_leaders:
-      - "{{ vault_leader_api_addr | urlsplit('hostname') }}"
     vault_staging_dir_path: /var/lib/vault-migration
   tasks:
-    - name: Step down from leader if {{ inventory_hostname }} is Vault Raft leader
-      community.docker.docker_container_exec:
-        command: |
-          vault operator step-down
-        container: "{{ vault_docker_name }}"
-        env:
-          VAULT_ADDR: "{{ vault_api_addr }}"
-          VAULT_TOKEN: "{{ vault_root_token }}"
-          VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-        user: root
+    - name: Step down from leader is current host is a Raft leader
+      block:
+        - name: Step down from leader if current host is Vault Raft leader
+          community.docker.docker_container_exec:
+            command: |
+              vault operator step-down
+            container: "{{ vault_docker_name }}"
+            env:
+              VAULT_ADDR: "{{ vault_api_addr }}"
+              VAULT_TOKEN: "{{ vault_root_token }}"
+              VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
+            user: root
+
+        - name: Wait for the cluster to set a new leader
+          ansible.builtin.wait_for:
+            timeout: 30
+
+        - name: Get new leader API address
+          ansible.builtin.uri:
+            url: "{{ vault_leader_api_addr }}/v1/sys/leader"
+          register: new_leader_api_addr_query
+
+        - name: Show new leader
+          debug:
+            var: new_leader_api_addr_query.json
+
       when: inventory_hostname == vault_raft_leader
 
-    - name: Get new leader API address
-      ansible.builtin.uri:
-        url: "{{ vault_leader_api_addr }}/v1/sys/leader"
-      register: new_leader_api_addr_query
-      when: inventory_hostname == vault_raft_leader
-
-    - name: Set new leader API address
-      ansible.builtin.set_fact:
-        new_leader_api_addr: new_leader_api_addr_query.json.leader_address
-      when: inventory_hostname == vault_raft_leader
-
-    - name: Stop Vault container at {{ inventory_hostname }}
+    - name: Stop Vault container at current host
       community.docker.docker_container:
         name: "{{ vault_docker_name }}"
         state: stopped
       become: true
 
-    - name: Apply OpenBao role for {{ inventory_hostname }}
+    - name: Apply OpenBao role for current host
       ansible.builtin.include_role:
         name: stackhpc.hashicorp.openbao
       vars:
         openbao_write_keys_file: false
         openbao_set_keys_fact: true
+        openbao_raft_leaders:
+          - "{{ new_leader_api_addr_query.json.leader_address if inventory_hostname == vault_raft_leader else vault_leader_api_addr | urlsplit('hostname') }}"
 
-    # - name: Unseal OpenBao at {{ inventory_hostname }} with temporary keys
+    # - name: Unseal OpenBao at current host with temporary keys
     #   ansible.builtin.include_role:
     #     name: stackhpc.hashicorp.vault_unseal
     #   vars:
     #     vault_api_addr: "{{ openbao_api_addr }}"
     #     vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
 
-    - name: Unseal OpenBao at {{ inventory_hostname }}
+    - name: Unseal OpenBao at current host
       ansible.builtin.include_role:
         name: stackhpc.hashicorp.vault_unseal
       vars:
         vault_api_addr: "{{ openbao_api_addr }}"
 
-    - name: Copy migration file into Vault container at {{ inventory_hostname }}
-      community.docker.docker_container_copy_into:
-        container: "{{ openbao_docker_name }}"
-        path: "{{ vault_staging_dir_path }}/raft-snapshot.snap"
-        container_path: "/raft-snapshot.snap"
-        # openbao user and group IDs
-        owner_id: 100
-        group_id: 1000
-      become: true
+    # - name: Copy migration file into Vault container at current host
+    #   community.docker.docker_container_copy_into:
+    #     container: "{{ openbao_docker_name }}"
+    #     path: "{{ vault_staging_dir_path }}/raft-snapshot.snap"
+    #     container_path: "/raft-snapshot.snap"
+    #     # openbao user and group IDs
+    #     owner_id: 100
+    #     group_id: 1000
+    #   become: true
 
-    - name: Restore Raft snapshot into OpenBao at {{ inventory_hostname }}
-      community.docker.docker_container_exec:
-        command: "vault operator raft snapshot restore -force /raft-snapshot.snap"
-        container: "{{ openbao_docker_name }}"
-        env:
-          VAULT_ADDR: "{{ openbao_api_addr }}"
-          VAULT_TOKEN: "{{ openbao_keys.root_token }}"
-          VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-        user: openbao
+    # - name: Restore Raft snapshot into OpenBao at current host
+    #   community.docker.docker_container_exec:
+    #     command: "vault operator raft snapshot restore -force /raft-snapshot.snap"
+    #     container: "{{ openbao_docker_name }}"
+    #     env:
+    #       VAULT_ADDR: "{{ openbao_api_addr }}"
+    #       VAULT_TOKEN: "{{ openbao_keys.root_token }}"
+    #       VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
+    #     user: openbao
 
-    - name: Check if OpenBao is initialized at {{ inventory_hostname }}
-      uri:
-        url: "{{ openbao_init_addr }}/v1/sys/init"
-      register: openbao_init_status
-      retries: 50
-      delay: 1
-      run_once: true
-      until:
-        - openbao_init_status.status == 200
-        - openbao_init_status.json.initialized
+    # - name: Check if OpenBao is initialized at current host
+    #   uri:
+    #     url: "{{ openbao_init_addr }}/v1/sys/init"
+    #   register: openbao_init_status
+    #   retries: 50
+    #   delay: 1
+    #   run_once: true
+    #   until:
+    #     - openbao_init_status.status == 200
+    #     - openbao_init_status.json.initialized
 
-    - name: Wait for OpenBao to finish keyring swap at {{ inventory_hostname }}
-      ansible.builtin.wait_for:
-        timeout: 10
+    # - name: Wait for OpenBao to finish keyring swap at current host
+    #   ansible.builtin.wait_for:
+    #     timeout: 10
 
-    - name: Join cluster ({{ inventory_hostname }})
-      community.docker.docker_container_exec:
-        command: "bao operator raft join {{ new_leader_api_addr if inventory_hostname == vault_raft_leader else vault_leader_api_addr }}"
-        container: "{{ openbao_docker_name }}"
-        env:
-          VAULT_ADDR: "{{ openbao_api_addr }}"
-          VAULT_TOKEN: "{{ openbao_keys.root_token }}"
-          VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-        user: openbao
+    # - name: Join cluster (current host)
+    #   community.docker.docker_container_exec:
+    #     command: "bao operator raft join {{ new_leader_api_addr if inventory_hostname == vault_raft_leader else vault_leader_api_addr }}"
+    #     container: "{{ openbao_docker_name }}"
+    #     env:
+    #       VAULT_ADDR: "{{ openbao_api_addr }}"
+    #       VAULT_TOKEN: "{{ openbao_keys.root_token }}"
+    #       VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
+    #     user: openbao
 
-    - name: Unseal OpenBao at {{ inventory_hostname }}
-      ansible.builtin.include_role:
-        name: stackhpc.hashicorp.vault_unseal
-      vars:
-        vault_api_addr: "{{ openbao_api_addr }}"
+    # - name: Unseal OpenBao at current host
+    #   ansible.builtin.include_role:
+    #     name: stackhpc.hashicorp.vault_unseal
+    #   vars:
+    #     vault_api_addr: "{{ openbao_api_addr }}"
