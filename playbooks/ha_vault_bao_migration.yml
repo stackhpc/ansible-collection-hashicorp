@@ -107,12 +107,15 @@
 
         - name: Wait for the cluster to set a new leader
           ansible.builtin.wait_for:
-            timeout: 30
+            timeout: 10
 
-        - name: Get new leader API address
+        - name: Get new leader API address from OpenBao running host
           ansible.builtin.uri:
-            url: "{{ vault_leader_api_addr }}/v1/sys/leader"
+            url: "http://127.0.0.1:8200/v1/sys/leader"
           register: new_leader_api_addr_query
+          delegate_to: "{{ groups['ordered_vault_hosts'][0] }}"
+          vars:
+            ansible_host: "{{ hostvars[groups['ordered_vault_hosts'][0]].ansible_host }}"
 
         - name: Show new leader
           debug:
@@ -133,7 +136,7 @@
         openbao_write_keys_file: false
         openbao_set_keys_fact: true
         openbao_raft_leaders:
-          - "{{ new_leader_api_addr_query.json.leader_address if inventory_hostname == vault_raft_leader else vault_leader_api_addr | urlsplit('hostname') }}"
+          - "{{ (new_leader_api_addr_query.json.leader_address if inventory_hostname == vault_raft_leader else vault_leader_api_addr) | urlsplit('hostname') }}"
 
     # - name: Unseal OpenBao at current host with temporary keys
     #   ansible.builtin.include_role:
