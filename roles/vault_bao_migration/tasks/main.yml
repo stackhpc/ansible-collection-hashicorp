@@ -9,12 +9,9 @@
   import_tasks: single-node-migration.yml
   when: vault_raft_followers | length == 0
 
-# - name: "HA Migration"
-#   import_tasks: ha-migration.yml
-#   when: vault_raft_followers | length > 0
-
 - name: "Stop when the vault is HA"
   debug:
     msg: "HA Vault to OpenBao migration needs to be performed with standalone playbook.
           Please Run the playbook with
           ``ansible-playbook stackhpc.hashicorp.ha-vault-bao-migration.yml -i <inventory_file>``"
+  run_once: true

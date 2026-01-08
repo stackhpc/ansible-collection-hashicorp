@@ -1,11 +1,4 @@
 ---
-# Currently only supports single-node migration
-# Changes required for HA migration:
-# Stop all Vault containers
-# Execute migration on just the leader
-# Redeploy non-leader nodes to join the new OpenBao cluster
-# Add some validation at the end to check all nodes are in the cluster
-
 - name: Fail is no Vault leader was found.
   fail:
     msg: No Vault leader was found. Please check the status of the Vault.
