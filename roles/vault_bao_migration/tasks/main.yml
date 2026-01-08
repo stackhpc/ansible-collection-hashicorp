@@ -2,16 +2,17 @@
 - name: "Vault Prerequisites"
   import_tasks: prereqs.yml
 
-- name: "Migrate to Raft"
+- name: "Migrate storage to Raft"
   import_tasks: raft.yml
 
 - name: "Single Node Migration"
   import_tasks: single-node-migration.yml
   when: vault_raft_followers | length == 0
 
-- name: "Stop when the vault is HA"
+- name: "Print next step when the vault is HA"
   debug:
-    msg: "HA Vault to OpenBao migration needs to be performed with standalone playbook.
+    msg: "HA Vault to OpenBao migration needs to be performed with dedicated playbook in the collection.
           Please Run the playbook with
-          ``ansible-playbook stackhpc.hashicorp.ha-vault-bao-migration.yml -i <inventory_file>``"
+          ``ansible-playbook stackhpc.hashicorp.ha_vault_bao_migration.yml -i <inventory_file>``"
   run_once: true
+  when: vault_raft_followers | length > 0

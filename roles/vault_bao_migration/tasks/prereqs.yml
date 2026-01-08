@@ -7,66 +7,22 @@
   when: openbao_registry_username | length > 0
   become: true
 
-- name: Ensure jq is installed
-  ansible.builtin.package:
-    name: jq
-    state: present
-  become: true
+- name: Get information of the Vault
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:8200/v1/sys/ha-status"
+    headers:
+      X-Vault-Token: "{{ vault_root_token }}"
+  run_once: true
+  register: ha_status_query
+  when: vault_raft_leader is undefined or vault_raft_leader == ""
 
-- name: Find Vault leader
-  ansible.builtin.shell:
-    cmd: >
-      docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR
-      {% if vault_tls_ca != "" %} -e VAULT_CAPATH=$VAULT_CAPATH {% endif %}
-      {{ vault_docker_name }}
-      vault operator members -format=json | jq -r '.Nodes[] | select(.active_node) | .hostname'
-  environment:
-    VAULT_ADDR: "{{ vault_api_addr }}"
-    VAULT_TOKEN: "{{ vault_root_token }}"
-    VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-  register: vault_raft_leader_query
-  changed_when: false
-  when: vault_raft_leader == ""
+- name: Set Vault leader as fact
+  ansible.builtin.set_fact:
+    vault_raft_leader: "{{ (ha_status_query.json.nodes | selectattr('active_node', 'equalto', true) | first).hostname }}"
+    vault_leader_api_addr: "{{ (ha_status_query.json.nodes | selectattr('active_node', 'equalto', true) | first).api_address }}"
+  when: vault_raft_leader is undefined or vault_raft_leader == ""
 
-- name: Find Vault followers
-  ansible.builtin.shell:
-    cmd: >
-      docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR
-      {% if vault_tls_ca != "" %} -e VAULT_CAPATH=$VAULT_CAPATH {% endif %}
-      {{ vault_docker_name }}
-      vault operator members -format=json | jq -r '.Nodes[] | select(.active_node == false) | .hostname'
-  environment:
-    VAULT_ADDR: "{{ vault_api_addr }}"
-    VAULT_TOKEN: "{{ vault_root_token }}"
-    VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-  register: vault_raft_followers_query
-  changed_when: false
+- name: Set Vault followers as fact
+  ansible.builtin.set_fact:
+    vault_raft_followers: "{{ ha_status_query.json.nodes | selectattr('active_node', 'equalto', false) | map(attribute='hostname') | list }}"
   when: vault_raft_followers | length == 0
-
-- name: Set Vault leader
-  ansible.builtin.set_fact:
-    vault_raft_leader: "{{ vault_raft_leader_query.stdout }}"
-  when: vault_raft_leader == ""
-
-- name: Set Vault followers
-  ansible.builtin.set_fact:
-    vault_raft_followers: "{{ vault_raft_followers_query.stdout_lines }}"
-  when: vault_raft_followers | length == 0
-
-- name: Get leader API address
-  ansible.builtin.shell:
-    cmd: >
-      docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR
-      {% if vault_tls_ca != "" %} -e VAULT_CAPATH=$VAULT_CAPATH {% endif %}
-      {{ vault_docker_name }}
-      vault status -format=json | jq -r '.leader_address'
-  register: vault_leader_api_addr_query
-  environment:
-    VAULT_ADDR: "{{ vault_api_addr }}"
-    VAULT_TOKEN: "{{ vault_root_token }}"
-    VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-  changed_when: false
-
-- name: Set fact the leader API address
-  ansible.builtin.set_fact:
-    vault_leader_api_addr: "{{ vault_leader_api_addr_query.stdout }}"

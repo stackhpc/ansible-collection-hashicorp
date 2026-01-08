@@ -6,45 +6,10 @@
       ansible.builtin.assert:
         that: vault_hosts | length > 1
 
-    - name: Find Vault leader
-      ansible.builtin.shell:
-        cmd: >
-          docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR
-          {% if vault_tls_ca != "" %} -e VAULT_CAPATH=$VAULT_CAPATH {% endif %}
-          {{ vault_docker_name }}
-          vault operator members -format=json | jq -r '.Nodes[] | select(.active_node) | .hostname'
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-      register: vault_raft_leader_query
-      changed_when: false
-      when: vault_raft_leader is undefined or vault_raft_leader == ""
-
-    - name: Set Vault leader
-      ansible.builtin.set_fact:
-        vault_raft_leader: "{{ vault_raft_leader_query.stdout }}"
-      when: vault_raft_leader is undefined or vault_raft_leader == ""
-
-    - name: Get leader API address
-      ansible.builtin.shell:
-        cmd: >
-          docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR
-          {% if vault_tls_ca != "" %} -e VAULT_CAPATH=$VAULT_CAPATH {% endif %}
-          {{ vault_docker_name }}
-          vault status -format=json | jq -r '.leader_address'
-      register: vault_leader_api_addr_query
-      environment:
-        VAULT_ADDR: "{{ vault_api_addr }}"
-        VAULT_TOKEN: "{{ vault_root_token }}"
-        VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
-      changed_when: false
-      when: vault_leader_api_addr is undefined or vault_leader_api_addr == ""
-
-    - name: Set fact the leader API address
-      ansible.builtin.set_fact:
-        vault_leader_api_addr: "{{ vault_leader_api_addr_query.stdout }}"
-      when: vault_leader_api_addr is undefined or vault_leader_api_addr == ""
+    - name: Run vault_bao_migration prerequesites
+      ansible.builtin.include_role:
+        name: vault_bao_migration
+        tasks_from: prereqs
 
     - name: Create a new inventory group with Vault leader being last
       block:
@@ -52,8 +17,7 @@
           ansible.builtin.add_host:
             name: "{{ item }}"
             groups: ordered_vault_hosts
-          loop: "{{ vault_hosts }}"
-          when: item != vault_raft_leader
+          loop: "{{ vault_raft_followers }}"
 
         - name: Add Vault leader last
           ansible.builtin.add_host:
@@ -83,7 +47,7 @@
       when: vault_tls_ca
       become: true
 
-- name: HA Vault to OpenBao migration except for leader
+- name: HA Vault to OpenBao migration
   hosts: ordered_vault_hosts
   serial: 1
   any_errors_fatal: true

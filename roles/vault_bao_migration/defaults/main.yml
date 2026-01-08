@@ -44,6 +44,7 @@ vault_tls_key: "{{ openbao_tls_key }}"
 vault_tls_cert: "{{ openbao_tls_cert }}"
 vault_tls_ca: "{{ openbao_tls_ca }}"
 vault_api_port: "{{ openbao_api_port }}"
+vault_root_token: ""
 
 vault_raft_config: >
   {
@@ -181,8 +182,6 @@ vault_vip_address: "{{ vault_vip_url | default(vault_bind_address) }}"
 vault_api_addr: "{{ vault_protocol ~ '://' ~ vault_vip_address ~ ':8200' }}"
 vault_bind_address: "127.0.0.1"
 vault_init_addr: "http://127.0.0.1:8200"
-vault_tls_key: ""
-vault_tls_cert: ""
 
 vault_config_dir: ""
 
