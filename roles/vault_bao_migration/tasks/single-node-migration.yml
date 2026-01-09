@@ -12,14 +12,14 @@
 
 - name: Ensure Raft Snapshot exists
   ansible.builtin.stat:
-    path: "{{ vault_staging_dir_path }}/raft-snapshot.snap"
+    path: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
   register: raft_snapshot_status
   failed_when: not raft_snapshot_status.stat.exists
   changed_when: false
 
 - name: Stop Vault container
   community.docker.docker_container:
-    name: "{{ vault_docker_name }}"
+    name: "{{ migration_vault_docker_name }}"
     state: stopped
   become: true
 
@@ -29,11 +29,24 @@
   vars:
     openbao_write_keys_file: false
     openbao_set_keys_fact: true
+    openbao_docker_name: "{{ migration_openbao_docker_name }}"
+    openbao_bind_addr: "{{ secret_store_bind_address }}"
+    openbao_api_addr: "{{ migration_common_api_addr }}"
+    openbao_registry_url: "{{ migration_openbao_registry_url }}"
+    openbao_registry_username: "{{ migration_openbao_registry_username }}"
+    openbao_registry_password: "{{ migration_openbao_registry_password }}"
+    openbao_config_dir: "{{ migration_openbao_config_dir }}"
+    openbao_cluster_name: "{{ migration_common_cluster_name }}"
+    openbao_docker_image: "{{ migration_openbao_docker_image }}"
+    openbao_docker_tag: "{{ migration_openbao_docker_tag }}"
+    openbao_tls_cert: "{{ migration_common_tls_cert }}"
+    openbao_tls_key: "{{ migration_common_tls_key }}"
+    openbao_tls_ca: "{{ migration_common_tls_ca }}"
 
 - name: Wait for OpenBao to be available
   ansible.builtin.wait_for:
-    host: "{{ openbao_bind_addr }}"
-    port: "{{ openbao_api_port }}"
+    host: "{{ migration_common_bind_addr }}"
+    port: "{{ migration_common_api_port }}"
     delay: 3
     timeout: 30
 
@@ -41,13 +54,13 @@
   ansible.builtin.include_role:
     name: stackhpc.hashicorp.vault_unseal
   vars:
-    vault_api_addr: "{{ openbao_api_addr }}"
+    vault_api_addr: "{{ migration_common_api_addr }}"
     vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
 
 - name: Copy migration file into Vault container
   community.docker.docker_container_copy_into:
-    container: "{{ openbao_docker_name }}"
-    path: "{{ vault_staging_dir_path }}/raft-snapshot.snap"
+    container: "{{ migration_openbao_docker_name }}"
+    path: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
     container_path: "/raft-snapshot.snap"
     # openbao user and group IDs
     owner_id: 100
@@ -57,15 +70,15 @@
 - name: Restore Raft snapshot into OpenBao
   community.docker.docker_container_exec:
     command: "vault operator raft snapshot restore -force /raft-snapshot.snap"
-    container: "{{ openbao_docker_name }}"
+    container: "{{ migration_openbao_docker_name }}"
     env:
-      VAULT_ADDR: "{{ openbao_api_addr }}"
+      VAULT_ADDR: "{{ migration_common_api_addr }}"
       VAULT_TOKEN: "{{ openbao_keys.root_token }}"
     user: openbao
 
 - name: Check if OpenBao is initialized
   uri:
-    url: "{{ openbao_init_addr }}/v1/sys/init"
+    url: "{{ migration_common_init_addr }}/v1/sys/init"
   register: openbao_init_status
   retries: 50
   delay: 1
@@ -82,4 +95,5 @@
   ansible.builtin.import_role:
     name: stackhpc.hashicorp.vault_unseal
   vars:
-    vault_api_addr: "{{ openbao_api_addr }}"
+    vault_api_addr: "{{ migration_common_api_addr }}"
+    vault_unseal_keys: "{{ migration_common_unseal_keys }}"

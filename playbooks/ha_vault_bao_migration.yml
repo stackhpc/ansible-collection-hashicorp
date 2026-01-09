@@ -17,34 +17,43 @@
           ansible.builtin.add_host:
             name: "{{ item }}"
             groups: ordered_vault_hosts
-          loop: "{{ vault_raft_followers }}"
+          loop: "{{ _vault_followers }}"
 
         - name: Add Vault leader last
           ansible.builtin.add_host:
-            name: "{{ vault_raft_leader }}"
+            name: "{{ _vault_leader }}"
             groups: ordered_vault_hosts
 
     - name: Copy TLS certificates from Vault to OpenBao
       block:
         - name: Copy TLS key
           ansible.builtin.copy:
-            src: "{{ vault_config_dir }}/{{ vault_tls_key }}"
-            dest: "{{ openbao_config_dir }}/{{ openbao_tls_key | default(vault_tls_key) }}"
+            src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_key }}"
+            dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_key }}"
             remote_src: true
+            # openbao user and group IDs
+            owner_id: 100
+            group_id: 1000
         - name: Copy TLS certificate
           ansible.builtin.copy:
-            src: "{{ vault_config_dir }}/{{ vault_tls_cert }}"
-            dest: "{{ openbao_config_dir }}/{{ openbao_tls_cert | default(vault_tls_cert) }}"
+            src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_cert }}"
+            dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_cert }}"
             remote_src: true
-      when: vault_tls_key and vault_tls_cert
+            # openbao user and group IDs
+            owner_id: 100
+            group_id: 1000
+      when: migration_common_tls_key and migration_common_tls_cert
       become: true
 
     - name: Copy CA from Vault to OpenBao
       ansible.builtin.copy:
-        src: "{{ vault_config_dir }}/{{ vault_tls_ca }}"
-        dest: "{{ openbao_config_dir }}/{{ openbao_tls_ca | default(vault_tls_ca) }}"
+        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_ca }}"
+        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_ca }}"
         remote_src: true
-      when: vault_tls_ca
+        # openbao user and group IDs
+        owner_id: 100
+        group_id: 1000
+      when: migration_common_tls_ca
       become: true
 
 - name: HA Vault to OpenBao migration
@@ -52,9 +61,9 @@
   serial: 1
   any_errors_fatal: true
   vars:
-    vault_docker_name: vault
-    openbao_docker_name: openbao
-    vault_staging_dir_path: /var/lib/vault-migration
+    migration_vault_docker_name: vault
+    migration_openbao_docker_name: openbao
+    migration_vault_staging_dir_path: /var/lib/vault-migration
   tasks:
     - name: Step down from leader is current host is a Raft leader
       block:
@@ -62,11 +71,11 @@
           community.docker.docker_container_exec:
             command: |
               vault operator step-down
-            container: "{{ vault_docker_name }}"
+            container: "{{ migration_vault_docker_name }}"
             env:
               VAULT_ADDR: "{{ vault_api_addr }}"
               VAULT_TOKEN: "{{ vault_root_token }}"
-              VAULT_CAPATH: "{{ '/vault/config/' + vault_tls_ca if vault_tls_ca != '' else omit }}"
+              VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if migration_common_tls_ca != '' else omit }}"
             user: root
 
         - name: Wait for the cluster to set a new leader
@@ -85,11 +94,11 @@
           debug:
             var: new_leader_api_addr_query.json
 
-      when: inventory_hostname == vault_raft_leader
+      when: inventory_hostname == _vault_leader
 
     - name: Stop Vault container at current host
       community.docker.docker_container:
-        name: "{{ vault_docker_name }}"
+        name: "{{ migration_vault_docker_name }}"
         state: stopped
       become: true
 
@@ -97,13 +106,25 @@
       ansible.builtin.include_role:
         name: stackhpc.hashicorp.openbao
       vars:
-        openbao_write_keys_file: false
-        openbao_set_keys_fact: true
+        openbao_docker_name: "{{ migration_openbao_docker_name }}"
+        openbao_bind_addr: "{{ secret_store_bind_address }}"
+        openbao_api_addr: "{{ migration_common_api_addr }}"
+        openbao_registry_url: "{{ migration_openbao_registry_url }}"
+        openbao_registry_username: "{{ migration_openbao_registry_username }}"
+        openbao_registry_password: "{{ migration_openbao_registry_password }}"
+        openbao_config_dir: "{{ migration_openbao_config_dir }}"
+        openbao_cluster_name: "{{ migration_common_cluster_name }}"
+        openbao_docker_image: "{{ migration_openbao_docker_image }}"
+        openbao_docker_tag: "{{ migration_openbao_docker_tag }}"
+        openbao_tls_cert: "{{ migration_common_tls_cert }}"
+        openbao_tls_key: "{{ migration_common_tls_key }}"
+        openbao_tls_ca: "{{ migration_common_tls_ca }}"
         openbao_raft_leaders:
-          - "{{ (new_leader_api_addr_query.json.leader_address if inventory_hostname == vault_raft_leader else vault_leader_api_addr) | urlsplit('hostname') }}"
+          - "{{ (new_leader_api_addr_query.json.leader_address if inventory_hostname == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
 
     - name: Unseal OpenBao at current host
       ansible.builtin.include_role:
         name: stackhpc.hashicorp.vault_unseal
       vars:
-        vault_api_addr: "{{ openbao_api_addr }}"
+        vault_api_addr: "{{ migration_common_api_addr }}"
+        vault_unseal_keys: "{{ migration_common_unseal_keys }}"

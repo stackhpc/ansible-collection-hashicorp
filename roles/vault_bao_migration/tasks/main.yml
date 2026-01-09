@@ -7,7 +7,7 @@
 
 - name: "Single Node Migration"
   import_tasks: single-node-migration.yml
-  when: vault_raft_followers | length == 0
+  when: _vault_followers | length == 0
 
 - name: "Print next step when the vault is HA"
   debug:
@@ -15,4 +15,4 @@
           Please Run the playbook with
           ``ansible-playbook stackhpc.hashicorp.ha_vault_bao_migration.yml -i <inventory_file>``"
   run_once: true
-  when: vault_raft_followers | length > 0
+  when: _vault_followers | length > 0
