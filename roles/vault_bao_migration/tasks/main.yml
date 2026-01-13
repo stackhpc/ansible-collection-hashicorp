@@ -5,9 +5,9 @@
 # - name: "Migrate storage to Raft"
 #   import_tasks: raft.yml
 
-# - name: "Single Node Migration"
-#   import_tasks: single-node-migration.yml
-#   when: _vault_followers | length == 0
+- name: "Single Node Migration"
+  ansible.builtin.import_tasks: single_node_migration.yml
+  when: _vault_followers | length == 0
 
 # - name: "Print next step when the vault is HA"
 #   debug:
