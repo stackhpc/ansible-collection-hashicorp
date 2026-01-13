@@ -55,8 +55,8 @@
         ansible_host: "{{ hostvars[item].ansible_host }}"
   vars:
     openbao_docker_name: "{{ migration_openbao_docker_name }}"
-    openbao_bind_addr: "{{ secret_store_bind_address }}"
-    openbao_api_addr: "{{ migration_common_api_addr }}"
+    openbao_bind_addr: "{{ migration_common_bind_addr }}"
+    openbao_api_addr: "{{ hostvars[item].migration_common_api_addr }}"
     openbao_registry_url: "{{ migration_openbao_registry_url }}"
     openbao_registry_username: "{{ migration_openbao_registry_username }}"
     openbao_registry_password: "{{ migration_openbao_registry_password }}"
@@ -78,5 +78,5 @@
       vars:
         ansible_host: "{{ hostvars[item].ansible_host }}"
   vars:
-    vault_api_addr: "{{ migration_common_api_addr }}"
+    vault_api_addr: "{{ hostvars[item].migration_common_api_addr }}"
     vault_unseal_keys: "{{ migration_common_unseal_keys }}"

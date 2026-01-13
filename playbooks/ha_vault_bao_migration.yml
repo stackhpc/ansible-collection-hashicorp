@@ -107,7 +107,7 @@
         name: stackhpc.hashicorp.openbao
       vars:
         openbao_docker_name: "{{ migration_openbao_docker_name }}"
-        openbao_bind_addr: "{{ secret_store_bind_address }}"
+        openbao_bind_addr: "{{ migration_common_bind_addr }}"
         openbao_api_addr: "{{ migration_common_api_addr }}"
         openbao_registry_url: "{{ migration_openbao_registry_url }}"
         openbao_registry_username: "{{ migration_openbao_registry_username }}"
