@@ -3,14 +3,6 @@
   debug:
     msg: "Current host: {{ item }}"
 
-- name: Set a fact about ansible host of current host
-  ansible.builtin.set_fact:
-    item_ansible_host: "{{ hostvars[item].ansible_host }}"
-
-- name: debugging
-  debug:
-    var: item_ansible_host
-
 - name: Step down from leader is current host is a Raft leader
   when: item == _vault_leader
   block:
@@ -26,7 +18,7 @@
         user: root
       delegate_to: "{{ item }}"
       vars:
-        ansible_host: "{{ item_ansible_host }}"
+        ansible_host: "{{ hostvars[item].ansible_host }}"
 
     - name: Wait for the cluster to set a new leader
       ansible.builtin.wait_for:
@@ -52,13 +44,15 @@
   become: true
   delegate_to: "{{ item }}"
   vars:
-    ansible_host: "{{ item_ansible_host }}"
+    ansible_host: "{{ hostvars[item].ansible_host }}"
 
 - name: Apply OpenBao role for current host
   ansible.builtin.include_role:
     name: stackhpc.hashicorp.openbao
     apply:
       delegate_to: "{{ item }}"
+      vars:
+        ansible_host: "{{ hostvars[item].ansible_host }}"
   vars:
     openbao_docker_name: "{{ migration_openbao_docker_name }}"
     openbao_bind_addr: "{{ secret_store_bind_address }}"
@@ -75,14 +69,14 @@
     openbao_tls_ca: "{{ migration_common_tls_ca }}"
     openbao_raft_leaders:
       - "{{ (new_leader_api_addr_query.json.leader_address if item == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
-    ansible_host: "{{ item_ansible_host }}"
 
 - name: Unseal OpenBao at current host
   ansible.builtin.include_role:
     name: stackhpc.hashicorp.vault_unseal
     apply:
       delegate_to: "{{ item }}"
+      vars:
+        ansible_host: "{{ hostvars[item].ansible_host }}"
   vars:
     vault_api_addr: "{{ migration_common_api_addr }}"
     vault_unseal_keys: "{{ migration_common_unseal_keys }}"
-    ansible_host: "{{ item_ansible_host }}"
