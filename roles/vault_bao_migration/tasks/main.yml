@@ -1,23 +1,19 @@
 ---
 - name: "Vault Prerequisites"
-  import_tasks: prereqs.yml
+  ansible.builtin.import_tasks: prereqs.yml
 
-# - name: "Migrate storage to Raft"
-#   import_tasks: raft.yml
+- name: "Migrate storage to Raft"
+  ansible.builtin.import_tasks: raft.yml
 
 - name: "Single Node Migration"
   ansible.builtin.import_tasks: single_node_migration.yml
   when: _vault_followers | length == 0
 
-# - name: "Print next step when the vault is HA"
-#   debug:
-#     msg: "HA Vault to OpenBao migration needs to be performed with dedicated playbook in the collection.
-#           Please Run the playbook with
-#           ``ansible-playbook stackhpc.hashicorp.ha_vault_bao_migration.yml -i <inventory_file>``"
-#   run_once: true
-#   when: _vault_followers | length > 0
+- name: "Prerequsites for HA clustered OpenBao migration"
+  ansible.builtin.include_tasks: ha_prereqs.yml
+  when: _vault_followers | length > 0
 
-- name: Serial test
-  ansible.builtin.include_tasks: test.yml
-  loop: "{{ _vault_followers }}"
+- name: "HA cluster migration"
+  ansible.builtin.include_tasks: ha_migration.yml
+  loop: "{{ groups['ordered_vault_hosts'] }}"
   run_once: true

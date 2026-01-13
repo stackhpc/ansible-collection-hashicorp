@@ -1,0 +1,38 @@
+---
+- name: Create a list that the leader is the last
+  ansible.builtin.add_host:
+    name: "{{ item }}"
+    groups: "ordered_vault_hosts"
+  loop: "{{ _vault_followers + [_vault_leader] }}"
+
+- name: Copy TLS certificates from Vault to OpenBao
+  when: migration_common_tls_key and migration_common_tls_cert
+  become: true
+  block:
+    - name: Copy TLS key
+      ansible.builtin.copy:
+        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_key }}"
+        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_key }}"
+        remote_src: true
+        # openbao user and group IDs
+        owner: 100
+        group: 1000
+    - name: Copy TLS certificate
+      ansible.builtin.copy:
+        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_cert }}"
+        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_cert }}"
+        remote_src: true
+        # openbao user and group IDs
+        owner: 100
+        group: 1000
+
+- name: Copy CA from Vault to OpenBao
+  ansible.builtin.copy:
+    src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_ca }}"
+    dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_ca }}"
+    remote_src: true
+    # openbao user and group IDs
+    owner: 100
+    group: 1000
+  when: migration_common_tls_ca
+  become: true
