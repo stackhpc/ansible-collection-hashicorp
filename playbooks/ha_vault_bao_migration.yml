@@ -73,8 +73,8 @@
               vault operator step-down
             container: "{{ migration_vault_docker_name }}"
             env:
-              VAULT_ADDR: "{{ vault_api_addr }}"
-              VAULT_TOKEN: "{{ vault_root_token }}"
+              VAULT_ADDR: "{{ migration_common_api_addr }}"
+              VAULT_TOKEN: "{{ migration_common_root_token }}"
               VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if migration_common_tls_ca != '' else omit }}"
             user: root
 
