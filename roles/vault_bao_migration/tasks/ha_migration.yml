@@ -53,22 +53,21 @@
       delegate_to: "{{ item }}"
       vars:
         ansible_host: "{{ hostvars[item].ansible_host }}"
-  vars:
-    openbao_docker_name: "{{ migration_openbao_docker_name }}"
-    openbao_bind_addr: "{{ migration_common_bind_addr }}"
-    openbao_api_addr: "{{ hostvars[item].migration_common_api_addr }}"
-    openbao_registry_url: "{{ migration_openbao_registry_url }}"
-    openbao_registry_username: "{{ migration_openbao_registry_username }}"
-    openbao_registry_password: "{{ migration_openbao_registry_password }}"
-    openbao_config_dir: "{{ migration_openbao_config_dir }}"
-    openbao_cluster_name: "{{ migration_common_cluster_name }}"
-    openbao_docker_image: "{{ migration_openbao_docker_image }}"
-    openbao_docker_tag: "{{ migration_openbao_docker_tag }}"
-    openbao_tls_cert: "{{ migration_common_tls_cert }}"
-    openbao_tls_key: "{{ migration_common_tls_key }}"
-    openbao_tls_ca: "{{ migration_common_tls_ca }}"
-    openbao_raft_leaders:
-      - "{{ (new_leader_api_addr_query.json.leader_address if item == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
+        openbao_docker_name: "{{ migration_openbao_docker_name }}"
+        openbao_bind_addr: "{{ migration_common_bind_addr }}"
+        openbao_api_addr: "{{ hostvars[item].migration_common_api_addr }}"
+        openbao_registry_url: "{{ migration_openbao_registry_url }}"
+        openbao_registry_username: "{{ migration_openbao_registry_username }}"
+        openbao_registry_password: "{{ migration_openbao_registry_password }}"
+        openbao_config_dir: "{{ migration_openbao_config_dir }}"
+        openbao_cluster_name: "{{ migration_common_cluster_name }}"
+        openbao_docker_image: "{{ migration_openbao_docker_image }}"
+        openbao_docker_tag: "{{ migration_openbao_docker_tag }}"
+        openbao_tls_cert: "{{ migration_common_tls_cert }}"
+        openbao_tls_key: "{{ migration_common_tls_key }}"
+        openbao_tls_ca: "{{ migration_common_tls_ca }}"
+        openbao_raft_leaders:
+          - "{{ (new_leader_api_addr_query.json.leader_address if item == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
 
 - name: Unseal OpenBao at current host
   ansible.builtin.include_role:
@@ -77,6 +76,5 @@
       delegate_to: "{{ item }}"
       vars:
         ansible_host: "{{ hostvars[item].ansible_host }}"
-  vars:
-    vault_api_addr: "{{ hostvars[item].migration_common_api_addr }}"
-    vault_unseal_keys: "{{ migration_common_unseal_keys }}"
+        vault_api_addr: "{{ hostvars[item].migration_common_api_addr }}"
+        vault_unseal_keys: "{{ migration_common_unseal_keys }}"
