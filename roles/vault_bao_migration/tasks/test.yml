@@ -1,0 +1,16 @@
+---
+- name: Task A
+  debug:
+    msg: Task A on {{ item }} on {{ inventory_hostname }}
+
+- name: Task B
+  debug:
+    msg: Task B on {{ item }} on {{ inventory_hostname }}
+
+- name: Task C
+  debug:
+    msg: Task C on {{ item }} on {{ inventory_hostname }}
+
+- name: Task D
+  debug:
+    msg: Task D on {{ item }} on {{ inventory_hostname }}
