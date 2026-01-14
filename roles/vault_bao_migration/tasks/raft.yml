@@ -1,5 +1,5 @@
 ---
-- name: Fail is no Vault leader was found.
+- name: Fail if no Vault leader was found.
   fail:
     msg: No Vault leader was found. Please check the status of the Vault.
   when: _vault_leader == ""

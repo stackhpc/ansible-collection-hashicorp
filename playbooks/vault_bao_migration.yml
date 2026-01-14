@@ -1,6 +1,6 @@
 ---
 - name: Hashicorp Vault to OpenBao migration
-  hosts: "{{ vault_hosts }}"
+  hosts: "{{ groups[vault_hosts_group] }}"
   tasks:
     - name: Prerequesites
       ansible.builtin.include_role:
@@ -25,5 +25,5 @@
       when: _vault_followers | length > 0
 
 - name: HA cluster migration
-  ansible.builtin.import_playbook: ha_vault_bao_migration.yml
+  ansible.builtin.import_playbook: ha_migration.yml
   when: _vault_followers | length > 0

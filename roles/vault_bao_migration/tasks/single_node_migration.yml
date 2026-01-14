@@ -1,15 +1,4 @@
 ---
-# General plan
-# Ensure snapshot exists
-# Maybe upgrade to known working version of vault
-# Maybe make another snapshot
-# Stop Vault container
-# Deploy OpenBao container with Raft backend
-# Restore snapshot into OpenBao
-# Unseal OpenBao
-
-# TODO upgrade to known working version then re-snapshot
-
 - name: Ensure Raft Snapshot exists
   ansible.builtin.stat:
     path: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
