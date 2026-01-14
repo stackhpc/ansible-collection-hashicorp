@@ -4,8 +4,20 @@
   serial: 1
   any_errors_fatal: true
   vars:
+    # Variable defaults from vault_bao_migration role
     migration_vault_docker_name: vault
     migration_openbao_docker_name: openbao
+    migration_openbao_docker_image: "openbao/openbao"
+    migration_openbao_docker_tag: "latest"
+    migration_common_bind_addr: "127.0.0.1"
+    migration_common_api_port: 8200
+    migration_common_api_addr: "{{ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
+    migration_openbao_registry_url: ""
+    migration_openbao_registry_username: ""
+    migration_openbao_registry_password: ""
+    migration_common_tls_key: ""
+    migration_common_tls_cert: ""
+    migration_common_tls_ca: ""
   tasks:
     - name: Step down from leader is current host is a Raft leader
       when: inventory_hostname == _vault_leader
@@ -18,7 +30,7 @@
             env:
               VAULT_ADDR: "{{ migration_common_api_addr }}"
               VAULT_TOKEN: "{{ migration_common_root_token }}"
-              VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if migration_common_tls_ca != '' else omit }}"
+              VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if (migration_common_tls_ca | default(false)) else omit }}"
             user: root
 
         - name: Wait for the cluster to set a new leader
@@ -33,10 +45,6 @@
           vars:
             ansible_host: "{{ hostvars[groups['ordered_vault_hosts'][0]].ansible_host }}"
 
-        - name: Show new leader
-          debug:
-            var: new_leader_api_addr_query.json
-
     - name: Stop Vault container at current host
       community.docker.docker_container:
         name: "{{ migration_vault_docker_name }}"
@@ -47,21 +55,21 @@
       ansible.builtin.include_role:
         name: stackhpc.hashicorp.openbao
       vars:
-        openbao_docker_name: "{{ migration_openbao_docker_name }}"
+        openbao_cluster_name: "{{ migration_common_cluster_name }}"
+        openbao_config_dir: "{{ migration_openbao_config_dir }}"
+        openbao_raft_leaders:
+          - "{{ (new_leader_api_addr_query.json.leader_address if inventory_hostname == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
         openbao_bind_addr: "{{ migration_common_bind_addr }}"
         openbao_api_addr: "{{ migration_common_api_addr }}"
         openbao_registry_url: "{{ migration_openbao_registry_url }}"
         openbao_registry_username: "{{ migration_openbao_registry_username }}"
         openbao_registry_password: "{{ migration_openbao_registry_password }}"
-        openbao_config_dir: "{{ migration_openbao_config_dir }}"
-        openbao_cluster_name: "{{ migration_common_cluster_name }}"
+        openbao_docker_name: "{{ migration_openbao_docker_name }}"
         openbao_docker_image: "{{ migration_openbao_docker_image }}"
         openbao_docker_tag: "{{ migration_openbao_docker_tag }}"
         openbao_tls_cert: "{{ migration_common_tls_cert }}"
         openbao_tls_key: "{{ migration_common_tls_key }}"
         openbao_tls_ca: "{{ migration_common_tls_ca }}"
-        openbao_raft_leaders:
-          - "{{ (new_leader_api_addr_query.json.leader_address if inventory_hostname == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
 
     - name: Unseal OpenBao at current host
       ansible.builtin.include_role:
