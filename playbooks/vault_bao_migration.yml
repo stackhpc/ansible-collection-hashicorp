@@ -1,0 +1,29 @@
+---
+- name: Hashicorp Vault to OpenBao migration
+  hosts: "{{ vault_hosts }}"
+  tasks:
+    - name: Prerequesites
+      ansible.builtin.include_role:
+        name: vault_bao_migration
+        tasks_from: prereqs
+
+    - name: Migrate storage to Raft
+      ansible.builtin.include_role:
+        name: vault_bao_migration
+        tasks_from: raft
+
+    - name: Single Node Migration
+      ansible.builtin.include_role:
+        name: vault_bao_migration
+        tasks_from: single_node_migration
+      when: _vault_followers | length == 0
+
+    - name: HA migration prerequesites
+      ansible.builtin.include_role:
+        name: vault_bao_migration
+        tasks_from: ha_prereqs
+      when: _vault_followers | length > 0
+
+- name: HA cluster migration
+  ansible.builtin.import_playbook: ha_vault_bao_migration.yml
+  when: _vault_followers | length > 0

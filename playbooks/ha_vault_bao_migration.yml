@@ -1,60 +1,60 @@
 ---
-- name: Prerequesites
-  hosts: "{{ vault_hosts }}"
-  tasks:
-    - name: Assert that length of vault_hosts is greater than 1
-      ansible.builtin.assert:
-        that: vault_hosts | length > 1
+# - name: Prerequesites
+#   hosts: "{{ vault_hosts }}"
+#   tasks:
+#     - name: Assert that length of vault_hosts is greater than 1
+#       ansible.builtin.assert:
+#         that: vault_hosts | length > 1
 
-    - name: Run vault_bao_migration prerequesites
-      ansible.builtin.include_role:
-        name: vault_bao_migration
-        tasks_from: prereqs
+#     - name: Run vault_bao_migration prerequesites
+#       ansible.builtin.include_role:
+#         name: vault_bao_migration
+#         tasks_from: prereqs
 
-    - name: Create a new inventory group with Vault leader being last
-      block:
-        - name: Add Vault followers to the new inventory group
-          ansible.builtin.add_host:
-            name: "{{ item }}"
-            groups: ordered_vault_hosts
-          loop: "{{ _vault_followers }}"
+#     - name: Create a new inventory group with Vault leader being last
+#       block:
+#         - name: Add Vault followers to the new inventory group
+#           ansible.builtin.add_host:
+#             name: "{{ item }}"
+#             groups: ordered_vault_hosts
+#           loop: "{{ _vault_followers }}"
 
-        - name: Add Vault leader last
-          ansible.builtin.add_host:
-            name: "{{ _vault_leader }}"
-            groups: ordered_vault_hosts
+#         - name: Add Vault leader last
+#           ansible.builtin.add_host:
+#             name: "{{ _vault_leader }}"
+#             groups: ordered_vault_hosts
 
-    - name: Copy TLS certificates from Vault to OpenBao
-      block:
-        - name: Copy TLS key
-          ansible.builtin.copy:
-            src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_key }}"
-            dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_key }}"
-            remote_src: true
-            # openbao user and group IDs
-            owner: 100
-            group: 1000
-        - name: Copy TLS certificate
-          ansible.builtin.copy:
-            src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_cert }}"
-            dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_cert }}"
-            remote_src: true
-            # openbao user and group IDs
-            owner: 100
-            group: 1000
-      when: migration_common_tls_key and migration_common_tls_cert
-      become: true
+#     - name: Copy TLS certificates from Vault to OpenBao
+#       block:
+#         - name: Copy TLS key
+#           ansible.builtin.copy:
+#             src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_key }}"
+#             dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_key }}"
+#             remote_src: true
+#             # openbao user and group IDs
+#             owner: 100
+#             group: 1000
+#         - name: Copy TLS certificate
+#           ansible.builtin.copy:
+#             src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_cert }}"
+#             dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_cert }}"
+#             remote_src: true
+#             # openbao user and group IDs
+#             owner: 100
+#             group: 1000
+#       when: migration_common_tls_key and migration_common_tls_cert
+#       become: true
 
-    - name: Copy CA from Vault to OpenBao
-      ansible.builtin.copy:
-        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_ca }}"
-        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_ca }}"
-        remote_src: true
-        # openbao user and group IDs
-        owner: 100
-        group: 1000
-      when: migration_common_tls_ca
-      become: true
+#     - name: Copy CA from Vault to OpenBao
+#       ansible.builtin.copy:
+#         src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_ca }}"
+#         dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_ca }}"
+#         remote_src: true
+#         # openbao user and group IDs
+#         owner: 100
+#         group: 1000
+#       when: migration_common_tls_ca
+#       become: true
 
 - name: HA Vault to OpenBao migration
   hosts: ordered_vault_hosts
@@ -66,6 +66,7 @@
     migration_vault_staging_dir_path: /var/lib/vault-migration
   tasks:
     - name: Step down from leader is current host is a Raft leader
+      when: inventory_hostname == _vault_leader
       block:
         - name: Step down from leader if current host is Vault Raft leader
           community.docker.docker_container_exec:
@@ -93,8 +94,6 @@
         - name: Show new leader
           debug:
             var: new_leader_api_addr_query.json
-
-      when: inventory_hostname == _vault_leader
 
     - name: Stop Vault container at current host
       community.docker.docker_container:
