@@ -1,6 +1,6 @@
 ---
 ### Common variables for shared configuration between Vault and OpenBao
-migration_common_cluster_name: ""
+migration_common_cluster_name: "" # required
 migration_common_tls_key: ""
 migration_common_tls_cert: ""
 migration_common_tls_ca: ""
@@ -15,8 +15,8 @@ migration_common_cluster_addr: "{{ migration_common_bind_addr ~ ':' ~ migration_
 migration_common_api_port: 8200
 migration_common_cluster_port: 8201
 
-migration_common_root_token: ""
-migration_common_unseal_keys: []
+migration_common_root_token: "" # required
+migration_common_unseal_keys: [] # required
 
 ### Vault specific variables that are needed during Raft migration
 migration_consul_docker_name: "consul"
@@ -26,7 +26,7 @@ migration_vault_docker_name: "vault"
 migration_vault_docker_image: "hashicorp/vault"
 migration_vault_docker_tag: "latest"
 
-migration_vault_config_dir: ""
+migration_vault_config_dir: "" # required
 
 # Staging directory for Vault migration
 migration_vault_staging_dir_path: /var/lib/vault-migration
@@ -105,7 +105,7 @@ migration_openbao_docker_name: "openbao"
 migration_openbao_docker_image: "openbao/openbao"
 migration_openbao_docker_tag: "latest"
 
-migration_openbao_config_dir: ""
+migration_openbao_config_dir: "" # required
 
 # Host on which to write root token and unseal keys.
 migration_openbao_write_keys_file_host: localhost
