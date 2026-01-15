@@ -1,4 +1,6 @@
-This role deploys and initializes OpenBao with a Raft backend.
+This role provides set of tasks that can be used when migrating Hashicorp Vault to OpenBao.
+A playbook that provides ready-to-use migration path can be found at `playbooks/vault_bao_migration.yml`
+or `stackhpc.hashicorp.vault_bao_migration` with import_playbook task.
 
 Requirements
 ------------
@@ -13,120 +15,55 @@ Role variables
 --------------
 
 * Common variables
+  * Mandatory
+    * `migration_common_root_token`: Root token string of current Vault cluster
+    * `migration_common_unseal_keys`: List of unseal key shards.
   * Optional
-    * `openbao_registry_url`: Address of the Docker registry used to authenticate (default: "")
-    * `openbao_registry_username`: Username used to authenticate with the Docker registry (default: "")
-    * `openbao_registry_password`: Password used to authenticate with the Docker registry (default: "")
+    * `migration_common_cluster_name`: Name of the current Vault cluster e.g. "prod_cluater" (default: "")
+    * `migration_common_bind_addr`: Which IP address should OpenBao bind to (default: "127.0.0.1")
+    * `migration_common_api_addr`: OpenBao [API addr](https://openbao.org/docs/configuration/#high-availability-parameters) - Full URL including protocol and port (default: "http://127.0.0.1:8200")
+    * `migration_common_init_addr`: OpenBao init addr (used only for initialisation purposes) - full URL including protocol and port (default: "http://127.0.0.1:8200")
+    * `migration_common_tls_key`: Path to TLS key to use by Vault and OpenBao
+    * `migration_common_tls_cert`: Path to TLS cert to use by Vault and OpenBao
+    * `migration_common_tls_ca`: Path to TLS CA certificate that can be used by peers to validate the leaders TLS
+
+* Hashicorp Vault
+  * Mandatory
+    * `migration_vault_config_dir`: Directory where current Vault configuration is mounted
+  * Optional
+    * `migration_consul_docker_name`: The name of Consul container that is running (default: "consul")
+    * `migration_consul_bind_port`: The port that is currently used by Consul (default: "8500")
+    * `migration_vault_docker_name`: The name of Vault container that is running (default: "vault")
+    * `migration_vault_docker_image`: Docker image for Vault (default: "hashicorp/vault")
+    * `migration_vault_docker_tag`: Docker image tag for Vault (default: "latest")
+    * `migration_vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"` that were configured to current Vault cluster
+    * `migration_vault_container_options.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
 
 * OpenBao
   * Mandatory
-    * `openbao_cluster_name`: OpenBao cluster name (e.g. "prod_cluster")
-    * `openbao_config_dir`: Directory into which to bind mount OpenBao configuration
+    * `migration_openbao_config_dir`: Directory into which to bind mount OpenBao configuration
   * Optional
-    * `openbao_bind_addr`: Which IP address should OpenBao bind to (default: "127.0.0.1")
-    * `openbao_api_addr`: OpenBao [API addr](https://openbao.org/docs/configuration/#high-availability-parameters) - Full URL including protocol and port (default: "http://127.0.0.1:8200")
-    * `openbao_init_addr`: OpenBao init addr (used only for initialisation purposes) - full URL including protocol and port (default: "http://127.0.0.1:8200")
-    * `openbao_docker_name`: Docker - under which name to run the OpenBao image (default: "bao")
-    * `openbao_docker_image`: Docker image for OpenBao (default: "openbao/openbao")
-    * `openbao_docker_tag`: Docker image tag for OpenBao (default: "latest")
-    * `openbao_extra_volumes`: List of `"<host_location>:<container_mountpoint>"`
-    * `openbao_ca_cert`: Path to CA certificate used to verify OpenBao server TLS cert
-    * `openbao_tls_key`: Path to TLS key to use by OpenBao
-    * `openbao_tls_cert`: Path to TLS cert to use by OpenBao
-    * `openbao_tls_ca`: Path to TLS CA certificate that can be used by peers to validate the leaders TLS
-    * `openbao_log_keys`: Whether to log the root token and unseal keys in the Ansible output. Default `false`
-    * `openbao_set_keys_fact`: Whether to set a `openbao_keys` fact containing the root token and unseal keys. Default `false`
-    * `openbao_write_keys_file`: Whether to write the root token and unseal keys to a file. Default `false`
-    * `openbao_write_keys_file_host`: Host on which to write root token and unseal keys. Default `localhost`
-    * `openbao_write_keys_file_path`: Path of file to write root token and unseal keys. Default `bao-keys.json`
-    * `openbao_raft_leaders`: List of IPs belonging to Raft leaders. Expected that the first and only entry is the IP address of the first OpenBao instance as this would be initialised whereas as the others will not.
-    * `openbao_enable_ui`: Whether to enable user interface that could be accessed from the `openbao_api_addr`. Default `false` 
+    * `migration_openbao_registry_url`: Address of the Docker registry used to authenticate (default: "")
+    * `migration_openbao_registry_username`: Username used to authenticate with the Docker registry (default: "")
+    * `migration_openbao_registry_password`: Password used to authenticate with the Docker registry (default: "")
+    * `migration_openbao_docker_name`: Docker - under which name to run the OpenBao image (default: "bao")
+    * `migration_openbao_docker_image`: Docker image for OpenBao (default: "openbao/openbao")
+    * `migration_openbao_docker_tag`: Docker image tag for OpenBao (default: "latest")
+    * `migration_openbao_write_keys_file_host`: Host on which to write root token and unseal keys. (default: `localhost`)
+    * `migration_openbao_write_keys_file_path`: Path of file to write root token and unseal keys. (default: `bao-keys.json`)
+    * `migration_openbao_enable_ui`: Whether to enable user interface that could be accessed from the `openbao_api_addr`. Default `false`
 
-Root and unseal keys
---------------------
-
-After OpenBao has been initialised, a root token and a set of unseal keys are emitted.
-It is very important to store these keys safely and securely.
-This role provides several mechanisms for extracting the root token and unseal keys:
-
-1. Print to Ansible log output (`openbao_log_keys`)
-1. Set a `openbao_keys` fact (`openbao_set_keys_fact`)
-1. Write to a file (`openbao_write_keys_file`)
-
-In each case, the output will contain the following:
-
-```json
-{
-  "keys": [
-    "...",
-    "..."
-  ],
-  "keys_base64": [
-    "...",
-    "..."
-  ],
-  "root_token": "..."
-}
+Example use with `vault_bao_migration` playbook
+-----------------------------------------------
 ```
-
-Example playbook (used with OpenStack Kayobe)
----------------------------------------------
+- name: Migrate Vault to Openbao
+  import_playbook: stackhpc.hashicorp.vault_bao_migration
+  vars:
+    vault_hosts_group: vault
+    migration_common_root_token: "{{ secret_store_keys.root_token }}"
+    migration_common_unseal_keys: "{{ secret_store_keys.keys_base64 }}"
+    migration_common_cluster_name: prod
+    migration_vault_config_dir: /opt/kayobe/vault
+    migration_openbao_config_dir: /opt/kayobe/openbao
 
 ```
----
-- name: Prepare for OpenBao role
-  any_errors_fatal: True
-  gather_facts: True
-  hosts: consul
-  tasks:
-    - name: Ensure /opt/kayobe/bao exists
-      file:
-        path: /opt/kayobe/bao
-        state: directory
-
-    - name: Template out tls key and cert
-      vars:
-        tls_files:
-          - content: "{{ secrets_external_tls_cert }}"
-            dest: "tls.cert"
-          - content: "{{ secrets_external_tls_key }}"
-            dest: "tls.key"
-      copy:
-        content: "{{ item.content }}"
-        dest: "/opt/kayobe/bao/{{ item.dest }}"
-        owner: 100
-        group: 1001
-        mode: 0600
-      loop: "{{ tls_files }}"
-      no_log: True
-      become: true
-
-- name: Run OpenBao role
-  any_errors_fatal: True
-  gather_facts: True
-  hosts: consul
-  roles:
-    - role: stackhpc.hashicorp.openbao
-      openbao_bind_address: "{{ external_net_ips[inventory_hostname] }}"
-      openbao_api_addr: "https://{{ external_net_fqdn }}:8200"
-      openbao_config_dir: "/opt/kayobe/bao"
-```
-
-Example post-config playbook to enable secrets engines:
-```
----
-- name: OpenBao post deployment config
-  any_errors_fatal: True
-  gather_facts: True
-  hosts: bao
-  tasks:
-    - name: Enable bao secrets engines
-      hashivault_secret_engine:
-        url: "https://vault.example.com:8200"
-        token: "{{ secrets_openbao_keys.root_token }}"
-        name: pki
-        backend: pki
-      run_once: True
-```
-
-NOTE: secrets_external_tls_cert/key are variables in Kayobe's secrets.yml
