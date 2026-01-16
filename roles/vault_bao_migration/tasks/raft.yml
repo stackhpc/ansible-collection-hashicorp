@@ -34,7 +34,7 @@
     container_path: "/vault-bao-migration.hcl"
 
 - name: Migrate Vault leader to Raft backend
-  when: inventory_hostname == _vault_leader
+  when: ansible_facts.hostname == _vault_leader
   block:
     - name: Migrate Vault leader to Raft backend
       community.docker.docker_container_exec:
@@ -77,7 +77,7 @@
         vault_unseal_keys: "{{ migration_common_unseal_keys }}"
 
 - name: Join Vault followers to Raft
-  when: inventory_hostname in _vault_followers
+  when: ansible_facts.hostname in _vault_followers
   block:
     - name: Start Vault followers with Raft backend
       community.docker.docker_container:
@@ -137,7 +137,7 @@
         fail_msg: Some Vault nodes failed to join raft peer
 
 - name: Backup snapshot of Raft data
-  when: inventory_hostname == _vault_leader
+  when: ansible_facts.hostname == _vault_leader
   block:
     - name: Take snapshot of Raft data
       community.docker.docker_container_exec:
