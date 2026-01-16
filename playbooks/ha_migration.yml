@@ -20,7 +20,7 @@
     migration_common_tls_ca: ""
   tasks:
     - name: Step down from leader is current host is a Raft leader
-      when: inventory_hostname == _vault_leader
+      when: ansible_facts.hostname == _vault_leader
       block:
         - name: Step down from leader if current host is Vault Raft leader
           community.docker.docker_container_exec:
@@ -58,7 +58,7 @@
         openbao_cluster_name: "{{ migration_common_cluster_name }}"
         openbao_config_dir: "{{ migration_openbao_config_dir }}"
         openbao_raft_leaders:
-          - "{{ (new_leader_api_addr_query.json.leader_address if inventory_hostname == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
+          - "{{ (new_leader_api_addr_query.json.leader_address if ansible_facts.hostname == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
         openbao_bind_addr: "{{ migration_common_bind_addr }}"
         openbao_api_addr: "{{ migration_common_api_addr }}"
         openbao_registry_url: "{{ migration_openbao_registry_url }}"
