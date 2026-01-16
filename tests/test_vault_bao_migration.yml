@@ -5,6 +5,7 @@
   vars:
     vault_config_dir: "/etc/vault"
     openbao_config_dir: "/etc/openbao"
+    vault_docker_tag: "1.14.1"
     vault_log_keys: true
     vault_protocol: http
     vault_set_keys_fact: true

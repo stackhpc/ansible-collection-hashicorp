@@ -11,6 +11,15 @@ Requirements
 Note that since version `4.6.4`, `ansible-modules-hashivault` requires
 `ansible>4`.
 
+Migration Constraints
+---------------------
+
+* Vault version 1.14.1 (OSS)
+* OpenBao version 2.2.0
+* Shamir unseal (no auto-unseal)
+
+These contraints are based on OpenBao's guide [In-Place Migration from Vault CE](https://openbao.org/docs/guides/migration/)
+
 Role variables
 --------------
 
@@ -35,7 +44,7 @@ Role variables
     * `migration_consul_bind_port`: The port that is currently used by Consul (default: "8500")
     * `migration_vault_docker_name`: The name of Vault container that is running (default: "vault")
     * `migration_vault_docker_image`: Docker image for Vault (default: "hashicorp/vault")
-    * `migration_vault_docker_tag`: Docker image tag for Vault (default: "latest")
+    * `migration_vault_docker_tag`: Docker image tag for Vault (default: "1.14.1)
     * `migration_vault_extra_volumes`: List of `"<host_location>:<container_mountpoint>"` that were configured to current Vault cluster
     * `migration_vault_container_options.etc_hosts`: Dict; `{<hostname>:<ip_address>}` to be added to container /etc/host
 
@@ -48,7 +57,7 @@ Role variables
     * `migration_openbao_registry_password`: Password used to authenticate with the Docker registry (default: "")
     * `migration_openbao_docker_name`: Docker - under which name to run the OpenBao image (default: "bao")
     * `migration_openbao_docker_image`: Docker image for OpenBao (default: "openbao/openbao")
-    * `migration_openbao_docker_tag`: Docker image tag for OpenBao (default: "latest")
+    * `migration_openbao_docker_tag`: Docker image tag for OpenBao (default: "2.2.0")
     * `migration_openbao_write_keys_file_host`: Host on which to write root token and unseal keys. (default: `localhost`)
     * `migration_openbao_write_keys_file_path`: Path of file to write root token and unseal keys. (default: `bao-keys.json`)
     * `migration_openbao_enable_ui`: Whether to enable user interface that could be accessed from the `openbao_api_addr`. Default `false`

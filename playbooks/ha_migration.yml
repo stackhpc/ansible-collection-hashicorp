@@ -8,7 +8,7 @@
     migration_vault_docker_name: vault
     migration_openbao_docker_name: openbao
     migration_openbao_docker_image: "openbao/openbao"
-    migration_openbao_docker_tag: "latest"
+    migration_openbao_docker_tag: "2.2.0"
     migration_common_bind_addr: "127.0.0.1"
     migration_common_api_port: 8200
     migration_common_api_addr: "{{ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"

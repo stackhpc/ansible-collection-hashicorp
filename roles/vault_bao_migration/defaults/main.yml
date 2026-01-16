@@ -24,7 +24,7 @@ migration_consul_bind_port: 8500
 
 migration_vault_docker_name: "vault"
 migration_vault_docker_image: "hashicorp/vault"
-migration_vault_docker_tag: "latest"
+migration_vault_docker_tag: "1.14.1"
 
 migration_vault_config_dir: "" # required
 
@@ -103,7 +103,7 @@ migration_openbao_registry_password: ""
 
 migration_openbao_docker_name: "openbao"
 migration_openbao_docker_image: "openbao/openbao"
-migration_openbao_docker_tag: "latest"
+migration_openbao_docker_tag: "2.2.0"
 
 migration_openbao_config_dir: "" # required
 
