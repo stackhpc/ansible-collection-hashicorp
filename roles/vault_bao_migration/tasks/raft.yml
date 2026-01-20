@@ -122,23 +122,19 @@
   when: _vault_followers | length > 0
   run_once: true
   block:
-    - name: Check the number of the raft peers
-      ansible.builtin.shell:
-        cmd: >
-          docker exec -e VAULT_TOKEN=$VAULT_TOKEN -e VAULT_ADDR=$VAULT_ADDR
-          {% if migration_common_tls_ca != "" %} -e VAULT_CAPATH=$VAULT_CAPATH {% endif %}
-          {{ migration_vault_docker_name }}
-          vault operator raft list-peers -format=json | jq -r '.data.config.servers | length'
-      register: vault_raft_peer_length
-      environment:
-        VAULT_ADDR: "{{ migration_common_api_addr }}"
-        VAULT_TOKEN: "{{ migration_common_root_token }}"
-        VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if migration_common_tls_ca != '' else omit }}"
-      changed_when: false
+    - name: Get the Raft cluster status
+      ansible.builtin.uri:
+        url:
+          "{{ migration_common_api_addr }}/v1/sys/storage/raft/autopilot/state"
+        headers:
+          X-Vault-Token: "{{ migration_common_root_token }}"
+      register: vault_raft_status
 
-    - name: Fail if number of the raft peers does not match number of Vault nodes
+    - name: Check cluster health and number of peers
       ansible.builtin.assert:
-        that: (vault_raft_peer_length.stdout | int) == (1 + _vault_followers | length)
+        that:
+          - vault_raft_status.json.data.healthy | bool
+          - (vault_raft_status.json.data.servers | length) == (1 + _vault_followers | length)
         fail_msg: Some Vault nodes failed to join raft peer
 
 - name: Backup snapshot of Raft data
