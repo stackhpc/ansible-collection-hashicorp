@@ -21,11 +21,13 @@
   ansible.builtin.command:
     cmd: "docker cp {{ migration_consul_docker_name }}:/consul-snapshot.snap {{ migration_vault_staging_dir_path }}"
   become: true
+  changed_when: false
 
 - name: Template out migration file
   ansible.builtin.template:
     src: vault-bao-migration.hcl.j2
     dest: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
+    mode: '0664'
   become: true
 
 - name: Copy migration file into Vault container

@@ -40,7 +40,7 @@
         - name: Get new leader API address from OpenBao running host
           ansible.builtin.uri:
             url: "http://127.0.0.1:8200/v1/sys/leader"
-          register: new_leader_api_addr_query
+          register: new_leader
           delegate_to: "{{ groups['ordered_vault_hosts'][0] }}"
           vars:
             ansible_host: "{{ hostvars[groups['ordered_vault_hosts'][0]].ansible_host }}"
@@ -58,7 +58,7 @@
         openbao_cluster_name: "{{ migration_common_cluster_name }}"
         openbao_config_dir: "{{ migration_openbao_config_dir }}"
         openbao_raft_leaders:
-          - "{{ (new_leader_api_addr_query.json.leader_address if ansible_facts.hostname == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
+          - "{{ (new_leader.json.leader_address if ansible_facts.hostname == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
         openbao_bind_addr: "{{ migration_common_bind_addr }}"
         openbao_api_addr: "{{ migration_common_api_addr }}"
         openbao_registry_url: "{{ migration_openbao_registry_url }}"
