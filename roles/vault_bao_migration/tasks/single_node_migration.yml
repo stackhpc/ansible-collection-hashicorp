@@ -5,6 +5,7 @@
   register: raft_snapshot_status
   failed_when: not raft_snapshot_status.stat.exists
   changed_when: false
+  become: true
 
 - name: Stop Vault container
   community.docker.docker_container:
