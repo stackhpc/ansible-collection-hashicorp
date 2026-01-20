@@ -17,6 +17,7 @@
         # openbao user and group IDs
         owner: 100
         group: 1000
+        mode: '0600'
     - name: Copy TLS certificate
       ansible.builtin.copy:
         src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_cert }}"
@@ -25,6 +26,7 @@
         # openbao user and group IDs
         owner: 100
         group: 1000
+        mode: '0600'
 
 - name: Copy CA from Vault to OpenBao
   ansible.builtin.copy:
@@ -34,5 +36,6 @@
     # openbao user and group IDs
     owner: 100
     group: 1000
+    mode: '0600'
   when: migration_common_tls_ca
   become: true

@@ -1,7 +1,9 @@
 ---
 - name: Hashicorp Vault to OpenBao migration
   gather_facts: true
-  hosts: "{{ groups[vault_hosts_group] }}"
+  hosts: "{{ groups[vault_hosts_group] | default([]) }}"
+  vars:
+    vault_hosts_group: ""
   tasks:
     - name: Prerequesites
       ansible.builtin.include_role:
