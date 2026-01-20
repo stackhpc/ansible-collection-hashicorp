@@ -8,7 +8,7 @@
   ansible.builtin.file:
     path: "{{ migration_vault_staging_dir_path }}"
     state: directory
-    mode: '0777'
+    mode: '0660'
   become: true
 
 - name: Take snapshot of Consul data
@@ -26,12 +26,17 @@
   ansible.builtin.template:
     src: vault-bao-migration.hcl.j2
     dest: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
+  become: true
 
 - name: Copy migration file into Vault container
   community.docker.docker_container_copy_into:
     container: "{{ migration_vault_docker_name }}"
     path: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
     container_path: "/vault-bao-migration.hcl"
+    # vault user and group IDs
+    owner_id: 100
+    group_id: 1000
+  become: true
 
 - name: Migrate Vault leader to Raft backend
   when: ansible_facts.hostname == _vault_leader
