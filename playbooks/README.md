@@ -11,7 +11,7 @@ Playbook Variables
 `vault_bao_migration` Role Variables
 ------------------------------------
 
-This playbook also requires to be used role variables of the role `vault_bao_migration`. Please refer to the README of the role for more information about its variables.
+This playbook requires variables for the [`vault_bao_migration`](../roles/vault_bao_migration/README.md) role to be set. Please refer to the README of the role for more information about its variables.
 
 Example usage
 -------------
