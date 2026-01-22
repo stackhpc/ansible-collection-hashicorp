@@ -10,10 +10,33 @@
         name: vault_bao_migration
         tasks_from: prereqs
 
+    - name: Get current storage backend
+      ansible.builtin.uri:
+        url: "{{ migration_common_api_addr }}/v1/sys/seal-status"
+      run_once: true
+      register: storage_query
+      retries: 50
+      delay: 1
+      until:
+        - storage_query.status == 200
+        - storage_query.json.storage_type is defined
+
+    - name: Backup Consul
+      ansible.builtin.include_role:
+        name: vault_bao_migration
+        tasks_from: consul_backup
+      when: storage_query.json.storage_type != "raft"
+
     - name: Migrate storage to Raft
       ansible.builtin.include_role:
         name: vault_bao_migration
         tasks_from: raft
+      when: storage_query.json.storage_type != "raft"
+
+    - name: Backup Raft
+      ansible.builtin.include_role:
+        name: vault_bao_migration
+        tasks_from: raft_backup
 
     - name: Single Node Migration
       ansible.builtin.include_role:

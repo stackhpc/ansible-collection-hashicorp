@@ -1,0 +1,19 @@
+---
+- name: Ensure Vault staging directory exists
+  ansible.builtin.file:
+    path: "{{ migration_vault_staging_dir_path }}"
+    state: directory
+    mode: '0660'
+  become: true
+
+- name: Take snapshot of Consul data
+  community.docker.docker_container_exec:
+    command: "consul snapshot save consul-snapshot.snap"
+    container: "{{ migration_consul_docker_name }}"
+
+- name: Copy Consul snapshot to host
+  # NOTE: No module to copy from container to host, so using command
+  ansible.builtin.command:
+    cmd: "docker cp {{ migration_consul_docker_name }}:/consul-snapshot.snap {{ migration_vault_staging_dir_path }}"
+  become: true
+  changed_when: false

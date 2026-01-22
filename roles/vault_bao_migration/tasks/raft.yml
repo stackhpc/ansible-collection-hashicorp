@@ -11,18 +11,6 @@
     mode: '0660'
   become: true
 
-- name: Take snapshot of Consul data
-  community.docker.docker_container_exec:
-    command: "consul snapshot save consul-snapshot.snap"
-    container: "{{ migration_consul_docker_name }}"
-
-- name: Copy Consul snapshot to host
-  # NOTE: No module to copy from container to host, so using command
-  ansible.builtin.command:
-    cmd: "docker cp {{ migration_consul_docker_name }}:/consul-snapshot.snap {{ migration_vault_staging_dir_path }}"
-  become: true
-  changed_when: false
-
 - name: Template out migration file
   ansible.builtin.template:
     src: vault-bao-migration.hcl.j2
@@ -137,27 +125,6 @@
           - vault_raft_status.json.data.healthy | bool
           - (vault_raft_status.json.data.servers | length) == (1 + _vault_followers | length)
         fail_msg: Some Vault nodes failed to join raft peer
-
-- name: Backup snapshot of Raft data
-  when: ansible_facts.hostname == _vault_leader
-  block:
-    - name: Take snapshot of Raft data
-      community.docker.docker_container_exec:
-        command: |
-          vault operator raft snapshot save raft-snapshot.snap
-        container: "{{ migration_vault_docker_name }}"
-        env:
-          VAULT_ADDR: "{{ migration_common_api_addr }}"
-          VAULT_TOKEN: "{{ migration_common_root_token }}"
-          VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if migration_common_tls_ca != '' else omit }}"
-        user: root
-
-    - name: Copy Raft snapshot to host
-      # NOTE: No module to copy from container to host, so using command
-      ansible.builtin.command:
-        cmd: "docker cp {{ migration_vault_docker_name }}:/raft-snapshot.snap {{ migration_vault_staging_dir_path }}"
-      become: true
-      changed_when: false
 
 - name: Stop Consul
   community.docker.docker_container:
