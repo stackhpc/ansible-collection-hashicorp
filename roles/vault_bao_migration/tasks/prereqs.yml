@@ -58,3 +58,35 @@
   ansible.builtin.set_fact:
     openbao_uid: "{{ id_openbao_result.container.Output | regex_search('uid=(\\d+)', '\\1') | first }}"
     openbao_gid: "{{ id_openbao_result.container.Output | regex_search('gid=(\\d+)', '\\1') | first }}"
+
+- name: Copy TLS certificates from Vault to OpenBao
+  when: migration_common_tls_key and migration_common_tls_cert
+  become: true
+  block:
+    - name: Copy TLS key
+      ansible.builtin.copy:
+        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_key }}"
+        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_key }}"
+        remote_src: true
+        owner: "{{ openbao_uid }}"
+        group: "{{ openbao_gid }}"
+        mode: '0600'
+    - name: Copy TLS certificate
+      ansible.builtin.copy:
+        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_cert }}"
+        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_cert }}"
+        remote_src: true
+        owner: "{{ openbao_uid }}"
+        group: "{{ openbao_gid }}"
+        mode: '0600'
+
+- name: Copy CA from Vault to OpenBao
+  ansible.builtin.copy:
+    src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_ca }}"
+    dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_ca }}"
+    remote_src: true
+    owner: "{{ openbao_uid }}"
+    group: "{{ openbao_gid }}"
+    mode: '0600'
+  when: migration_common_tls_ca
+  become: true
