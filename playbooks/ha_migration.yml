@@ -19,7 +19,7 @@
     migration_common_tls_cert: ""
     migration_common_tls_ca: ""
   tasks:
-    - name: Step down from leader is current host is a Raft leader
+    - name: Step down from leader if current host is Vault Raft leader
       when: ansible_facts.hostname == _vault_leader
       block:
         - name: Step down from leader if current host is Vault Raft leader
