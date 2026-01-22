@@ -7,6 +7,22 @@
   changed_when: false
   become: true
 
+- name: Get cluster id of Vault
+  ansible.builtin.uri:
+    url: "{{ migration_common_init_addr }}/v1/sys/health"
+    status_code:
+      - 200
+      - 429
+      - 501
+      - 503
+  register: vault_cluster_id_query
+  retries: 50
+  delay: 1
+  run_once: true
+  until:
+    - vault_cluster_id_query.status == 200
+    - vault_cluster_id_query.json.cluster_id is defined
+
 - name: Stop Vault container
   community.docker.docker_container:
     name: "{{ migration_vault_docker_name }}"
@@ -87,3 +103,23 @@
   vars:
     vault_api_addr: "{{ migration_common_api_addr }}"
     vault_unseal_keys: "{{ migration_common_unseal_keys }}"
+
+- name: Get cluster id of OpenBao
+  ansible.builtin.uri:
+    url: "{{ migration_common_init_addr }}/v1/sys/health"
+    status_code:
+      - 200
+      - 429
+      - 501
+      - 503
+  register: openbao_cluster_id_query
+  retries: 50
+  delay: 1
+  run_once: true
+  until:
+    - openbao_cluster_id_query.status == 200
+    - openbao_cluster_id_query.json.cluster_id is defined
+
+- name: Check restore is correctly done
+  ansible.builtin.assert:
+    that: vault_cluster_id_query.json.cluster_id == openbao_cluster_id_query.json.cluster_id
