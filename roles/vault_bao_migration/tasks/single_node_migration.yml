@@ -47,14 +47,13 @@
     vault_api_addr: "{{ migration_common_api_addr }}"
     vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
 
-- name: Copy migration file into Vault container
+- name: Copy Raft snapshot into OpenBao container
   community.docker.docker_container_copy_into:
     container: "{{ migration_openbao_docker_name }}"
     path: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
     container_path: "/raft-snapshot.snap"
-    # openbao user and group IDs
-    owner_id: 100
-    group_id: 1000
+    owner_id: "{{ openbao_uid }}"
+    group_id: "{{ openbao_gid }}"
   become: true
 
 - name: Restore Raft snapshot into OpenBao

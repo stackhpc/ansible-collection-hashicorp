@@ -26,3 +26,35 @@
   ansible.builtin.set_fact:
     _vault_followers: "{{ ha_status_query.json.nodes | selectattr('active_node', 'equalto', false) | map(attribute='hostname') | list }}"
   when: _vault_followers | length == 0
+
+- name: Get Vault user id and group id
+  community.docker.docker_container:
+    name: "vault_uid_check"
+    image: "{{ migration_vault_docker_image }}:{{ migration_vault_docker_tag }}"
+    command: "id vault"
+    detach: false
+    cleanup: true
+  register: id_vault_result
+  become: true
+  run_once: true
+
+- name: Set Vault user id and group id
+  ansible.builtin.set_fact:
+    vault_uid: "{{ id_vault_result.container.Output | regex_search('uid=(\\d+)', '\\1') | first }}"
+    vault_gid: "{{ id_vault_result.container.Output | regex_search('gid=(\\d+)', '\\1') | first }}"
+
+- name: Get OpenBao user id and group id
+  community.docker.docker_container:
+    name: "openbao_uid_check"
+    image: "{{ migration_openbao_docker_image }}:{{ migration_openbao_docker_tag }}"
+    command: "id openbao"
+    detach: false
+    cleanup: true
+  register: id_openbao_result
+  become: true
+  run_once: true
+
+- name: Set OpenBao user id and group id
+  ansible.builtin.set_fact:
+    openbao_uid: "{{ id_openbao_result.container.Output | regex_search('uid=(\\d+)', '\\1') | first }}"
+    openbao_gid: "{{ id_openbao_result.container.Output | regex_search('gid=(\\d+)', '\\1') | first }}"

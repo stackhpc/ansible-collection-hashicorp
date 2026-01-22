@@ -35,9 +35,8 @@
     container: "{{ migration_vault_docker_name }}"
     path: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
     container_path: "/vault-bao-migration.hcl"
-    # vault user and group IDs
-    owner_id: 100
-    group_id: 1000
+    owner_id: "{{ vault_uid }}"
+    group_id: "{{ vault_gid }}"
   become: true
 
 - name: Migrate Vault leader to Raft backend
