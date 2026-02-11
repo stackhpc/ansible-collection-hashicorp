@@ -7,7 +7,7 @@ migration_common_tls_ca: ""
 
 migration_common_protocol: "{{ 'https' if migration_common_tls_key and migration_common_tls_cert else 'http' }}"
 
-migration_common_api_addr: "{{ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
+migration_common_api_addr: "{{ migration_common_protocol ~ '://' ~ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
 migration_common_bind_addr: "127.0.0.1"
 migration_common_init_addr: "{{ migration_common_api_addr }}"
 migration_common_cluster_addr: "{{ migration_common_bind_addr ~ ':' ~ migration_common_cluster_port }}"
