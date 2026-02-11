@@ -10,6 +10,7 @@
     migration_openbao_docker_image: "openbao/openbao"
     migration_openbao_docker_tag: "2.2.0"
     migration_common_bind_addr: "127.0.0.1"
+    migration_common_protocol: "{{ 'https' if migration_common_tls_key and migration_common_tls_cert else 'http' }}"
     migration_common_api_port: 8200
     migration_common_api_addr: "{{ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
     migration_openbao_registry_url: ""
@@ -39,7 +40,7 @@
 
         - name: Get new leader API address from OpenBao running host
           ansible.builtin.uri:
-            url: "http://127.0.0.1:8200/v1/sys/leader"
+            url: "{{ migration_common_protocol }}://{{ migration_common_api_addr }}/v1/sys/leader"
           register: new_leader
           delegate_to: "{{ groups['ordered_vault_hosts'][0] }}"
           vars:

@@ -9,7 +9,7 @@
 
 - name: Get information of the Vault
   ansible.builtin.uri:
-    url: "http://127.0.0.1:8200/v1/sys/ha-status"
+    url: "{{ migration_common_protocol }}://{{ migration_common_api_addr }}/v1/sys/ha-status"
     headers:
       X-Vault-Token: "{{ migration_common_root_token }}"
   run_once: true
