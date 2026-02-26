@@ -81,6 +81,7 @@
       VAULT_TOKEN: "{{ openbao_keys.root_token }}"
       VAULT_CAPATH: "{{  ('/openbao/config/' + migration_common_tls_ca) if (migration_common_tls_ca | default(false)) else omit }}"
     user: openbao
+  become: true
 
 - name: Check if Raft restore is done and OpenBao is initialized
   ansible.builtin.uri:

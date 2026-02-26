@@ -15,6 +15,7 @@
   community.docker.docker_container_exec:
     command: "consul snapshot save consul-snapshot.snap"
     container: "{{ migration_consul_docker_name }}"
+  become: true
 
 - name: Copy Consul snapshot to host
   # NOTE: No module to copy from container to host, so using command
@@ -47,6 +48,7 @@
         command: "vault operator migrate -config=/vault-bao-migration.hcl"
         container: "{{ migration_vault_docker_name }}"
         user: vault
+      become: true
 
     - name: Start Vault leader container with Raft backend
       docker_container:
@@ -151,6 +153,7 @@
           VAULT_TOKEN: "{{ migration_common_root_token }}"
           VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if migration_common_tls_ca != '' else omit }}"
         user: root
+      become: true
 
     - name: Copy Raft snapshot to host
       # NOTE: No module to copy from container to host, so using command
@@ -163,3 +166,4 @@
   community.docker.docker_container:
     name: "{{ migration_consul_docker_name }}"
     state: "stopped"
+  become: true
