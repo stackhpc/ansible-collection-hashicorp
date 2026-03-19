@@ -40,11 +40,8 @@
 
         - name: Get new leader API address from OpenBao running host
           ansible.builtin.uri:
-            url: "{{ migration_common_api_addr }}/v1/sys/leader"
+            url: "{{ _vault_followers_api_addr | first }}/v1/sys/leader"
           register: new_leader
-          delegate_to: "{{ groups['ordered_vault_hosts'][0] }}"
-          vars:
-            ansible_host: "{{ hostvars[groups['ordered_vault_hosts'][0]].ansible_host }}"
 
     - name: Stop Vault container at current host
       community.docker.docker_container:

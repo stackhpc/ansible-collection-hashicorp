@@ -49,6 +49,7 @@ _vault_volumes: "{{ _vault_default_volumes + migration_vault_extra_volumes }}"
 _vault_leader: ""
 _vault_leader_api_addr: ""
 _vault_followers: []
+_vault_followers_api_addr: []
 
 migration_vault_raft_config: >
   {
