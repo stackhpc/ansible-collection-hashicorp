@@ -4,3 +4,7 @@
     name: "{{ item }}"
     groups: "ordered_vault_hosts"
   loop: "{{ _vault_followers + [_vault_leader] }}"
+
+- name: Create Raft snapshot
+  ansible.builtin.include_tasks: raft_backup.yml
+  when: ansible_facts.hostname == _vault_leader

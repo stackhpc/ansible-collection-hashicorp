@@ -1,4 +1,7 @@
 ---
+- name: Create Raft snapshot
+  ansible.builtin.include_tasks: raft_backup.yml
+
 - name: Ensure Raft Snapshot exists
   ansible.builtin.stat:
     path: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
