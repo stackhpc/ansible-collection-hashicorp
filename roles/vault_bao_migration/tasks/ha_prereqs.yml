@@ -7,4 +7,4 @@
 
 - name: Create Raft snapshot
   ansible.builtin.include_tasks: raft_backup.yml
-  when: ansible_facts.hostname == _vault_leader
+  when: ansible_facts.nodename == _vault_leader

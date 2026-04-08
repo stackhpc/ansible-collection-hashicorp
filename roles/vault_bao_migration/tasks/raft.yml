@@ -41,7 +41,7 @@
   become: true
 
 - name: Migrate Vault leader to Raft backend
-  when: ansible_facts.hostname == _vault_leader
+  when: ansible_facts.nodename == _vault_leader
   block:
     - name: Migrate Vault leader to Raft backend
       community.docker.docker_container_exec:
@@ -85,7 +85,7 @@
         vault_unseal_keys: "{{ migration_common_unseal_keys }}"
 
 - name: Join Vault followers to Raft
-  when: ansible_facts.hostname in _vault_followers
+  when: ansible_facts.nodename in _vault_followers
   block:
     - name: Start Vault followers with Raft backend
       community.docker.docker_container:
