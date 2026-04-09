@@ -26,7 +26,7 @@ You can run/skip part of the tasks by using following tags
   - Taking Raft snapshot (Single node only)
   - Migrating Vault to OpenBao
 
-Prerequiste tasks are always run
+Prerequisite tasks are always run
 
 Example usage
 -------------
