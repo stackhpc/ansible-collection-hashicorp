@@ -21,7 +21,7 @@
     migration_openbao_registry_password: ""
   tasks:
     - name: Step down from leader if current host is Vault Raft leader
-      when: ansible_facts.nodename == _vault_leader
+      when: ansible_facts.nodename == _vault_leader.hostname
       block:
         - name: Step down from leader if current host is Vault Raft leader
           community.docker.docker_container_exec:
@@ -38,10 +38,17 @@
           ansible.builtin.wait_for:
             timeout: 10
 
-        - name: Get new leader API address from OpenBao running host
+        - name: Query cluster status again
           ansible.builtin.uri:
-            url: "{{ _vault_followers_api_addr | first }}/v1/sys/leader"
-          register: new_leader
+            url: "{{ _vault_followers[0].api_address }}/v1/sys/ha-status"
+            headers:
+              X-Vault-Token: "{{ migration_common_root_token }}"
+          register: ha_status
+
+        - name: Update cluster status
+          ansible.builtin.set_fact:
+            _vault_leader: "{{ (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first) }}"
+            _vault_followers: "{{ ha_status.json.nodes | selectattr('active_node', 'equalto', false) | list }}"
 
     - name: Stop Vault container at current host
       community.docker.docker_container:
@@ -56,7 +63,7 @@
         openbao_cluster_name: "{{ migration_common_cluster_name }}"
         openbao_config_dir: "{{ migration_openbao_config_dir }}"
         openbao_raft_leaders:
-          - "{{ (new_leader.json.leader_address if ansible_facts.nodename == _vault_leader else _vault_leader_api_addr) | urlsplit('hostname') }}"
+          - "{{ _vault_leader.api_address | urlsplit('hostname') }}" # OpenBao role expects hostname only
         openbao_bind_addr: "{{ migration_common_bind_addr }}"
         openbao_api_addr: "{{ migration_common_api_addr }}"
         openbao_registry_url: "{{ migration_openbao_registry_url }}"

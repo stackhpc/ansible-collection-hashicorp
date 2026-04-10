@@ -41,7 +41,7 @@
   become: true
 
 - name: Migrate Vault leader to Raft backend
-  when: ansible_facts.nodename == _vault_leader
+  when: ansible_facts.nodename == _vault_leader.hostname
   block:
     - name: Migrate Vault leader to Raft backend
       community.docker.docker_container_exec:
@@ -85,7 +85,7 @@
         vault_unseal_keys: "{{ migration_common_unseal_keys }}"
 
 - name: Join Vault followers to Raft
-  when: ansible_facts.nodename in _vault_followers
+  when: ansible_facts.nodename != _vault_leader.hostname
   block:
     - name: Start Vault followers with Raft backend
       community.docker.docker_container:
@@ -137,7 +137,7 @@
       ansible.builtin.assert:
         that:
           - vault_raft_status.json.data.healthy | bool
-          - (vault_raft_status.json.data.servers | length) == (1 + _vault_followers | length)
+          - (vault_raft_status.json.data.servers | length) == (_vault_nodes | length)
         fail_msg: Some Vault nodes failed to join raft peer
 
 - name: Stop Consul

@@ -13,20 +13,23 @@
     headers:
       X-Vault-Token: "{{ migration_common_root_token }}"
   run_once: true
-  register: ha_status_query
-  when: _vault_leader is undefined or _vault_leader == ""
+  register: ha_status
 
-- name: Set Vault leader as fact
+- name: Set fact of Vault cluster status
   ansible.builtin.set_fact:
-    _vault_leader: "{{ (ha_status_query.json.nodes | selectattr('active_node', 'equalto', true) | first).hostname }}"
-    _vault_leader_api_addr: "{{ (ha_status_query.json.nodes | selectattr('active_node', 'equalto', true) | first).api_address }}"
-  when: _vault_leader is undefined or _vault_leader == ""
+    _vault_nodes: "{{ ha_status.json.nodes }}"
+    _vault_leader: "{{ (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first) }}"
+    _vault_followers: "{{ ha_status.json.nodes | selectattr('active_node', 'equalto', false) | list }}"
 
-- name: Set Vault followers as fact
-  ansible.builtin.set_fact:
-    _vault_followers: "{{ ha_status_query.json.nodes | selectattr('active_node', 'equalto', false) | map(attribute='hostname') | list }}"
-    _vault_followers_api_addr: "{{ ha_status_query.json.nodes | selectattr('active_node', 'equalto', false) | map(attribute='api_address') | list }}"
-  when: _vault_followers | length == 0
+- name: Assert that a leader node is present
+  ansible.builtin.assert:
+    that: _vault_leader.hostname is defined
+    fail_msg: Vault leader cannot be found. Please check the status of the Vault.
+
+- name: Assert that cluster size matches the number of hosts
+  ansible.builtin.assert:
+    that: ansible_play_hosts | length == _vault_nodes | length
+    fail_msg: Vault cluster size does not match with the number of given hosts. Please check the status of the Vault.
 
 - name: Get Vault user id and group id
   community.docker.docker_container:

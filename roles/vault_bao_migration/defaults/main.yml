@@ -46,10 +46,9 @@ _vault_volumes: "{{ _vault_default_volumes + migration_vault_extra_volumes }}"
 
 # For checking leader host and follower hosts
 # It is recommened not to override these variables
-_vault_leader: ""
-_vault_leader_api_addr: ""
+_vault_nodes: []
+_vault_leader: {}
 _vault_followers: []
-_vault_followers_api_addr: []
 
 migration_vault_raft_config: >
   {
@@ -81,7 +80,7 @@ migration_vault_raft_config: >
         "path": "/vault/file/",
         "node_id": "raft_{{ inventory_hostname }}"{% if _vault_followers | length > 0 %},
         "retry_join": {
-          "leader_api_addr": "{{ _vault_leader_api_addr }}"{% if migration_common_tls_ca %},
+          "leader_api_addr": "{{ _vault_leader.api_address }}"{% if migration_common_tls_ca %},
           "leader_ca_cert_file": "/vault/config/{{ migration_common_tls_ca }}"
           {% endif %}
         }
