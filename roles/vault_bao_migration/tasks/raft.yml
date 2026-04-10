@@ -1,47 +1,54 @@
 ---
-- name: Fail if no Vault leader was found.
-  fail:
-    msg: No Vault leader was found. Please check the status of the Vault.
-  when: _vault_leader == ""
+- name: Check current stroage backend
+  ansible.builtin.uri:
+    url: "{{ vault_api_address }}/v1/sys/seal-status"
+  vars:
+    vault_api_address: "{{ (_vault_nodes | selectattr('hostname', 'equalto', ansible_facts.nodename) | first).api_address }}"
+  register: seal_status
 
-- name: Ensure Vault staging directory exists
-  ansible.builtin.file:
-    path: "{{ migration_vault_staging_dir_path }}"
-    state: directory
-    mode: '0660'
-  become: true
+- name: Prepare Raft migration
+  when: seal_status.json.storage_type != "raft"
+  block:
+    - name: Ensure Vault staging directory exists
+      ansible.builtin.file:
+        path: "{{ migration_vault_staging_dir_path }}"
+        state: directory
+        mode: '0660'
+      become: true
 
-- name: Take snapshot of Consul data
-  community.docker.docker_container_exec:
-    command: "consul snapshot save consul-snapshot.snap"
-    container: "{{ migration_consul_docker_name }}"
-  become: true
+    - name: Take snapshot of Consul data
+      community.docker.docker_container_exec:
+        command: "consul snapshot save consul-snapshot.snap"
+        container: "{{ migration_consul_docker_name }}"
+      become: true
 
-- name: Copy Consul snapshot to host
-  # NOTE: No module to copy from container to host, so using command
-  ansible.builtin.command:
-    cmd: "docker cp {{ migration_consul_docker_name }}:/consul-snapshot.snap {{ migration_vault_staging_dir_path }}"
-  become: true
-  changed_when: false
+    - name: Copy Consul snapshot to host
+      # NOTE: No module to copy from container to host, so using command
+      ansible.builtin.command:
+        cmd: "docker cp {{ migration_consul_docker_name }}:/consul-snapshot.snap {{ migration_vault_staging_dir_path }}"
+      become: true
+      changed_when: false
 
-- name: Template out migration file
-  ansible.builtin.template:
-    src: vault-bao-migration.hcl.j2
-    dest: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
-    mode: '0664'
-  become: true
+    - name: Template out migration file
+      ansible.builtin.template:
+        src: vault-bao-migration.hcl.j2
+        dest: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
+        mode: '0664'
+      become: true
 
-- name: Copy migration file into Vault container
-  community.docker.docker_container_copy_into:
-    container: "{{ migration_vault_docker_name }}"
-    path: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
-    container_path: "/vault-bao-migration.hcl"
-    owner_id: "{{ vault_uid }}"
-    group_id: "{{ vault_gid }}"
-  become: true
+    - name: Copy migration file into Vault container
+      community.docker.docker_container_copy_into:
+        container: "{{ migration_vault_docker_name }}"
+        path: "{{ migration_vault_staging_dir_path }}/vault-bao-migration.hcl"
+        container_path: "/vault-bao-migration.hcl"
+        owner_id: "{{ vault_uid }}"
+        group_id: "{{ vault_gid }}"
+      become: true
 
 - name: Migrate Vault leader to Raft backend
-  when: ansible_facts.nodename == _vault_leader.hostname
+  when:
+    - ansible_facts.nodename == _vault_leader.hostname
+    - seal_status.json.storage_type != "raft"
   block:
     - name: Migrate Vault leader to Raft backend
       community.docker.docker_container_exec:
@@ -49,6 +56,7 @@
         container: "{{ migration_vault_docker_name }}"
         user: vault
       become: true
+      when: seal_status.json.storage_type != "raft"
 
     - name: Start Vault leader container with Raft backend
       docker_container:
@@ -85,7 +93,9 @@
         vault_unseal_keys: "{{ migration_common_unseal_keys }}"
 
 - name: Join Vault followers to Raft
-  when: ansible_facts.nodename != _vault_leader.hostname
+  when:
+    - ansible_facts.nodename != _vault_leader.hostname
+    - seal_status.json.storage_type != "raft"
   block:
     - name: Start Vault followers with Raft backend
       community.docker.docker_container:
