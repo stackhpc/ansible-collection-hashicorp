@@ -2,6 +2,13 @@ Vault to OpenBao migration playbook
 -----------------------------------
 `vault_bao_migration.yml` provides full play of Vault to OpenBao migration route for both single node and HA clustered Vault.
 
+Requirements
+-------------
+
+This playbook uses set of tasks from the role ``vault_bao_migration``.
+
+This playbook assumes that the CA of Vault/OpenBao's TLS is already trusted on the hosts that runs it.
+
 Playbook Variables
 ------------------
 
@@ -28,7 +35,23 @@ You can run/skip part of the tasks by using following tags
 
 Prerequisite tasks are always run
 
-Example usage
+Raft Migration
+--------------
+
+Before OpenBao migration, Vault's storage backend needs to be migrated to Raft.
+
+> IMPORTANT: If some Vault nodes fail to migrate to Raft backend in HA setting,
+> it can be easier to just continuing with OpenBao migration with the remianing
+> cluster and replicate missing nodes later. However, since Raft needs
+> to maintain quorum, it is important to check if it's safe to push
+> forward. You can check the failure tolerance of the cluster by querying
+> Raft state with [HTTP API request](https://developer.hashicorp.com/vault/api-docs/system/storage/raftautopilot#get-cluster-state)
+> or [Vault CLI](https://developer.hashicorp.com/vault/docs/commands/operator/raft#autopilot-state)
+> inside the Vault container. If it's zero, OpenBao migration cannot go
+> ahead and Raft cluster needs to be fixed until the tolerance becomes
+> greater than zero.
+
+Example Usage
 -------------
 ```
 - name: Migrate Vault to Openbao

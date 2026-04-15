@@ -11,6 +11,8 @@ Requirements
 Note that since version `4.6.4`, `ansible-modules-hashivault` requires
 `ansible>4`.
 
+This role assumes that the CA of Vault/OpenBao's TLS is already trusted on the hosts that runs it.
+
 Migration Constraints
 ---------------------
 
