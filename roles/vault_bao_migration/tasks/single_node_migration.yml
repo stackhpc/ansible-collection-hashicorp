@@ -66,24 +66,17 @@
     vault_api_addr: "{{ migration_common_api_addr }}"
     vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
 
-- name: Copy Raft snapshot into OpenBao container
-  community.docker.docker_container_copy_into:
-    container: "{{ migration_openbao_docker_name }}"
-    path: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
-    container_path: "/raft-snapshot.snap"
-    owner_id: "{{ openbao_uid }}"
-    group_id: "{{ openbao_gid }}"
-  become: true
-
 - name: Restore Raft snapshot into OpenBao
-  community.docker.docker_container_exec:
-    command: "vault operator raft snapshot restore -force /raft-snapshot.snap"
-    container: "{{ migration_openbao_docker_name }}"
-    env:
-      VAULT_ADDR: "{{ migration_common_api_addr }}"
-      VAULT_TOKEN: "{{ openbao_keys.root_token }}"
-      VAULT_CAPATH: "{{  ('/openbao/config/' + migration_common_tls_ca) if (migration_common_tls_ca | default(false)) else omit }}"
-    user: openbao
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/storage/raft/snapshot-force"
+    method: "POST"
+    headers:
+      X-Vault-Token: "{{ openbao_keys.root_token }}"
+    status_code:
+      - 200
+      - 204
+    src: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
+    remote_src: true
   become: true
 
 - name: Check if Raft restore is done and OpenBao is initialized

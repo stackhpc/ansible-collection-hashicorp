@@ -8,20 +8,10 @@
   run_once: true
 
 - name: Backup snapshot of Raft data
-  community.docker.docker_container_exec:
-    command: |
-      vault operator raft snapshot save raft-snapshot.snap
-    container: "{{ migration_vault_docker_name }}"
-    env:
-      VAULT_ADDR: "{{ migration_common_api_addr }}"
-      VAULT_TOKEN: "{{ migration_common_root_token }}"
-      VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if migration_common_tls_ca != '' else omit }}"
-    user: root
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/storage/raft/snapshot"
+    headers:
+      X-Vault-Token: "{{ migration_common_root_token }}"
+    dest: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
+    mode: "0600"
   become: true
-
-- name: Copy Raft snapshot to host
-  # NOTE: No module to copy from container to host, so using command
-  ansible.builtin.command:
-    cmd: "docker cp {{ migration_vault_docker_name }}:/raft-snapshot.snap {{ migration_vault_staging_dir_path }}"
-  become: true
-  changed_when: false

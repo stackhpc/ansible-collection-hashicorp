@@ -23,20 +23,18 @@
     - name: Step down from leader if current host is Vault Raft leader
       when: ansible_facts.nodename == _vault_leader.hostname
       block:
-        - name: Step down from leader if current host is Vault Raft leader
-          community.docker.docker_container_exec:
-            command: |
-              vault operator step-down
-            container: "{{ migration_vault_docker_name }}"
-            env:
-              VAULT_ADDR: "{{ migration_common_api_addr }}"
-              VAULT_TOKEN: "{{ migration_common_root_token }}"
-              VAULT_CAPATH: "{{ '/vault/config/' + migration_common_tls_ca if (migration_common_tls_ca | default(false)) else omit }}"
-            user: root
+        - name: Step down from leader if current host is the Vault Raft leader
+          ansible.builtin.uri:
+            url: "{{ _vault_leader.api_address }}/v1/sys/step-down"
+            method: "POST"
+            status_code:
+              - 204
+            headers:
+              X-Vault-Token: "{{ migration_common_root_token }}"
 
         - name: Wait for the cluster to set a new leader
           ansible.builtin.wait_for:
-            timeout: 10
+            timeout: 10 # A node sleeps for 10 seconds before attempting to grab leader role again
 
         - name: Query cluster status again
           ansible.builtin.uri:
@@ -44,6 +42,13 @@
             headers:
               X-Vault-Token: "{{ migration_common_root_token }}"
           register: ha_status
+
+        - name: Assert that the leader has changed
+          ansible.builtin.assert:
+            that: (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first) != ansible_facts.nodename
+            fail_msg: The original leader failed to step down. Check cluster status.
+            # If it's compared with _vault_leader.api_address, Ansible skips as
+            # the opposite condition was already evaluated for thie block
 
         - name: Update cluster status
           ansible.builtin.set_fact:
