@@ -16,8 +16,8 @@ This role assumes that the CA of Vault/OpenBao's TLS is already trusted on the h
 Migration Constraints
 ---------------------
 
-* Vault version 1.14.1 (OSS)
-* OpenBao version 2.2.0
+* Vault version 1.14.1 (OSS) or later
+* OpenBao version 2.2.0 or later
 * Shamir unseal (no auto-unseal)
 
 These contraints are based on OpenBao's guide [In-Place Migration from Vault CE](https://openbao.org/docs/guides/migration/)
