@@ -14,23 +14,19 @@
       ansible.builtin.include_role:
         name: vault_bao_migration
         tasks_from: raft
-      tags: raft
 
     - name: Single Node Migration
       ansible.builtin.include_role:
         name: vault_bao_migration
         tasks_from: single_node_migration
       when: _vault_followers | length == 0
-      tags: migration
 
     - name: HA migration prerequesites
       ansible.builtin.include_role:
         name: vault_bao_migration
         tasks_from: ha_prereqs
       when: _vault_followers | length > 0
-      tags: migration
 
 - name: HA cluster migration
   ansible.builtin.import_playbook: ha_migration.yml
   when: _vault_followers | length > 0
-  tags: migration

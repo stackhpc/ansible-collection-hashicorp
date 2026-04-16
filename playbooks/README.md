@@ -20,21 +20,6 @@ Playbook Variables
 
 This playbook requires variables for the [`vault_bao_migration`](../roles/vault_bao_migration/README.md) role to be set. Please refer to the README of the role for more information about its variables.
 
-Playbook Tags
--------------
-
-You can run/skip part of the tasks by using following tags
-
-* ``raft`` includes tasks for
-  - Taking Consul snapshot
-  - Migrating storage backend to Raft
-  - Stopping Consul container
-* ``migration`` includes tasks for
-  - Taking Raft snapshot (Single node only)
-  - Migrating Vault to OpenBao
-
-Prerequisite tasks are always run
-
 Raft Migration
 --------------
 
