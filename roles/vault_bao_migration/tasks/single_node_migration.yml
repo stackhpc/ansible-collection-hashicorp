@@ -1,4 +1,22 @@
 ---
+- name: Check if OpenBao is already running
+  community.docker.docker_container_info:
+    name: "{{ migration_openbao_docker_name }}"
+  register: docker_state
+
+- name: Query seal status
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/seal-status"
+  register: test_query
+  changed_when: false
+
+- name: Stop the play if OpenBao is already running and initialised
+  ansible.builtin.meta: end_play
+  when:
+    - docker_state.exists
+    - docker_state.container.State.Running | default(false)
+    - test_query.json.initialized
+
 - name: Create Raft snapshot
   ansible.builtin.include_tasks: raft_backup.yml
 
