@@ -1,0 +1,10 @@
+---
+- name: Create a list that the leader is the last
+  ansible.builtin.add_host:
+    name: "{{ item.hostname }}"
+    groups: "ordered_vault_hosts"
+  loop: "{{ _vault_followers + [_vault_leader] }}"
+
+- name: Create Raft snapshot
+  ansible.builtin.include_tasks: raft_backup.yml
+  when: ansible_facts.nodename == _vault_leader.hostname

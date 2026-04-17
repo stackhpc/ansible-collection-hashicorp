@@ -1,0 +1,115 @@
+---
+### Common variables for shared configuration between Vault and OpenBao
+migration_common_cluster_name: "" # required
+migration_common_tls_key: ""
+migration_common_tls_cert: ""
+migration_common_tls_ca: ""
+
+migration_common_protocol: "{{ 'https' if migration_common_tls_key and migration_common_tls_cert else 'http' }}"
+
+migration_common_api_addr: "{{ migration_common_protocol ~ '://' ~ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
+migration_common_bind_addr: "127.0.0.1"
+migration_common_init_addr: "{{ migration_common_api_addr }}"
+migration_common_cluster_addr: "{{ migration_common_bind_addr ~ ':' ~ migration_common_cluster_port }}"
+
+migration_common_api_port: 8200
+migration_common_cluster_port: 8201
+
+migration_common_root_token: "" # required
+migration_common_unseal_keys: [] # required
+
+### Vault specific variables that are needed during Raft migration
+migration_consul_docker_name: "consul"
+migration_consul_bind_port: 8500
+
+migration_vault_docker_name: "vault"
+migration_vault_docker_image: "hashicorp/vault"
+migration_vault_docker_tag: "1.14.1"
+
+migration_vault_config_dir: "" # required
+
+# Staging directory for Vault migration
+migration_vault_staging_dir_path: /var/lib/vault-migration
+
+# Docker volumes
+# Default volume mapping
+_vault_default_volumes:
+  - "{{ migration_vault_config_dir }}:/vault/config"
+  - "vault_file:/vault/file"
+  - "vault_logs:/vault/logs"
+
+# Exposed for playbooks to access later
+migration_vault_extra_volumes: []
+
+# Combined volume lists
+_vault_volumes: "{{ _vault_default_volumes + migration_vault_extra_volumes }}"
+
+# For checking leader host and follower hosts
+# It is recommened not to override these variables
+_vault_nodes: []
+_vault_leader: {}
+_vault_followers: []
+
+migration_vault_raft_config: >
+  {
+    "cluster_name": "{{ migration_common_cluster_name }}",
+    "ui": true,
+    "api_addr": "{{ migration_common_api_addr }}",
+    "cluster_addr": "{{ migration_common_protocol }}://{{ migration_common_cluster_addr }}",
+    "listener": [{
+      "tcp": {
+        "address": "{{ migration_common_bind_addr }}:8200",
+        {% if migration_common_tls_key and migration_common_tls_cert %}
+        "tls_min_version": "tls12",
+        "tls_key_file": "/vault/config/{{ migration_common_tls_key }}",
+        "tls_cert_file": "/vault/config/{{ migration_common_tls_cert }}"
+        {% else %}
+        "tls_disable": "true"
+        {% endif %}
+      }{% if migration_common_bind_addr != '127.0.0.1' %},
+    },
+    {
+      "tcp": {
+        "address": "127.0.0.1:8200",
+        "tls_disable": "true"
+      }
+    {% endif %}
+    }],
+    "storage": {
+      "raft": {
+        "path": "/vault/file/",
+        "node_id": "raft_{{ inventory_hostname }}"{% if _vault_followers | length > 0 %},
+        "retry_join": {
+          "leader_api_addr": "{{ _vault_leader.api_address }}"{% if migration_common_tls_ca %},
+          "leader_ca_cert_file": "/vault/config/{{ migration_common_tls_ca }}"
+          {% endif %}
+        }
+        {% endif %}
+      }
+    },
+    "telemetry": {
+      "prometheus_retention_time": "30s",
+      "disable_hostname": true
+    }
+  }
+
+# Vault Docker options for when restarting Vault container with Raft
+migration_vault_container_options: {}
+
+### OpenBao specific variables that are needed when migrating to OpenBao
+migration_openbao_registry_url: ""
+migration_openbao_registry_username: ""
+migration_openbao_registry_password: ""
+
+migration_openbao_docker_name: "openbao"
+migration_openbao_docker_image: "openbao/openbao"
+migration_openbao_docker_tag: "2.2.0"
+
+migration_openbao_config_dir: "" # required
+
+# Host on which to write root token and unseal keys.
+migration_openbao_write_keys_file_host: localhost
+# Path of file to write root token and unseal keys.
+migration_openbao_write_keys_file_path: bao-keys.json
+
+migration_openbao_enable_ui: false

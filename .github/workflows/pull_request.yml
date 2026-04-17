@@ -26,6 +26,7 @@ jobs:
           - openbao
           - openbao_ha
           - vault
+          - vault_bao_migration
     steps:
       - name: Github Checkout 🛎
         uses: actions/checkout@v4

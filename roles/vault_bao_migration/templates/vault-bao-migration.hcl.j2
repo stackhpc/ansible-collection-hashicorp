@@ -1,0 +1,11 @@
+storage_source "consul" {
+  "address" = "127.0.0.1:{{ migration_consul_bind_port }}",
+  "path" = "vault/"
+}
+
+storage_destination "raft" {
+  "path" = "/vault/file/"
+  "node_id" = "raft_{{ inventory_hostname }}"
+}
+
+cluster_addr = "{{ migration_common_init_addr }}"

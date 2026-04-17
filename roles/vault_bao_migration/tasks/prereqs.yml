@@ -1,0 +1,107 @@
+---
+- name: Log into Docker registry
+  docker_login:
+    registry: "{{ migration_openbao_registry_url }}"
+    username: "{{ migration_openbao_registry_username }}"
+    password: "{{ migration_openbao_registry_password }}"
+  when: migration_openbao_registry_username | length > 0
+  become: true
+
+- name: Get information of the Vault
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/ha-status"
+    headers:
+      X-Vault-Token: "{{ migration_common_root_token }}"
+  run_once: true
+  register: ha_status
+
+- name: Set fact of Vault cluster status
+  ansible.builtin.set_fact:
+    _vault_nodes: "{{ ha_status.json.nodes }}"
+    _vault_leader: "{{ (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first) }}"
+    _vault_followers: "{{ ha_status.json.nodes | selectattr('active_node', 'equalto', false) | list }}"
+
+- name: Assert that a leader node is present
+  ansible.builtin.assert:
+    that: _vault_leader.hostname is defined
+    fail_msg: Vault leader cannot be found. Please check the status of the Vault.
+
+- name: Assert that cluster size matches the number of hosts
+  ansible.builtin.assert:
+    that: ansible_play_hosts | length == _vault_nodes | length
+    fail_msg: Vault cluster size does not match with the number of given hosts. Please check the status of the Vault.
+
+- name: Get Vault user id and group id
+  community.docker.docker_container:
+    name: "vault_uid_check"
+    image: "{{ migration_vault_docker_image }}:{{ migration_vault_docker_tag }}"
+    command: "id vault"
+    detach: false
+    cleanup: true
+  register: id_vault_result
+  become: true
+  run_once: true
+
+- name: Set Vault user id and group id
+  ansible.builtin.set_fact:
+    vault_uid: "{{ id_vault_result.container.Output | regex_search('uid=(\\d+)', '\\1') | first }}"
+    vault_gid: "{{ id_vault_result.container.Output | regex_search('gid=(\\d+)', '\\1') | first }}"
+
+- name: Get OpenBao user id and group id
+  community.docker.docker_container:
+    name: "openbao_uid_check"
+    image: "{{ migration_openbao_docker_image }}:{{ migration_openbao_docker_tag }}"
+    command: "id openbao"
+    detach: false
+    cleanup: true
+  register: id_openbao_result
+  become: true
+  run_once: true
+
+- name: Set OpenBao user id and group id
+  ansible.builtin.set_fact:
+    openbao_uid: "{{ id_openbao_result.container.Output | regex_search('uid=(\\d+)', '\\1') | first }}"
+    openbao_gid: "{{ id_openbao_result.container.Output | regex_search('gid=(\\d+)', '\\1') | first }}"
+
+# Need to create directory early if we're copying TLS key and certs or CA
+- name: Ensure Openbao config directory exists
+  ansible.builtin.file:
+    path: "{{ migration_openbao_config_dir }}"
+    state: directory
+    mode: "0770"
+    owner: "{{ openbao_uid }}"
+    group: "{{ openbao_gid }}"
+  become: true
+  when: (migration_common_tls_key and migration_common_tls_cert) or migration_common_tls_ca
+
+- name: Copy TLS certificates from Vault to OpenBao
+  when: migration_common_tls_key and migration_common_tls_cert
+  become: true
+  block:
+    - name: Copy TLS key
+      ansible.builtin.copy:
+        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_key }}"
+        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_key }}"
+        remote_src: true
+        owner: "{{ openbao_uid }}"
+        group: "{{ openbao_gid }}"
+        mode: '0600'
+    - name: Copy TLS certificate
+      ansible.builtin.copy:
+        src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_cert }}"
+        dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_cert }}"
+        remote_src: true
+        owner: "{{ openbao_uid }}"
+        group: "{{ openbao_gid }}"
+        mode: '0600'
+
+- name: Copy CA from Vault to OpenBao
+  ansible.builtin.copy:
+    src: "{{ migration_vault_config_dir }}/{{ migration_common_tls_ca }}"
+    dest: "{{ migration_openbao_config_dir }}/{{ migration_common_tls_ca }}"
+    remote_src: true
+    owner: "{{ openbao_uid }}"
+    group: "{{ openbao_gid }}"
+    mode: '0600'
+  when: migration_common_tls_ca
+  become: true
