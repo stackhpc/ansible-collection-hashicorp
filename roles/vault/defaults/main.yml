@@ -24,6 +24,10 @@ vault_tls_cert: ""
 
 vault_config_dir: ""
 
+vault_raft_leaders: []
+
+vault_storage_type: "consul"
+
 vault_config: >
   {
     "cluster_name": "{{ vault_cluster_name }}",
@@ -49,10 +53,17 @@ vault_config: >
     {% endif %}
     }],
     "storage": {
+    {% if vault_storage_type == 'consul' %}
     "consul": {
        "address": "127.0.0.1:{{ consul_bind_port }}",
        "path": "vault/"
       }
+    {% elif vault_storage_type == 'raft' %}
+    "raft": {
+        "node_id": "raft_{{ inventory_hostname }}",
+        "path": "/vault/file"
+      }
+    {% endif %}
     },
     "telemetry": {
       "prometheus_retention_time": "30s",
@@ -97,3 +108,16 @@ vault_write_keys_file: false
 vault_write_keys_file_host: localhost
 # Path of file to write root token and unseal keys.
 vault_write_keys_file_path: vault-keys.json
+
+vault_migrate_consul_to_raft: false
+
+vault_raft_migration_config: >
+  storage_source "consul" {
+    address = "{{ consul_bind_ip }}:{{ consul_bind_port }}"
+    path = "vault/"
+  }
+  storage_destination "raft" {
+    node_id = "raft_{{ inventory_hostname }}"
+    path = "/vault/file"
+  }
+  cluster_addr = "{{ vault_protocol }}://{{ vault_bind_address }}:8201"
