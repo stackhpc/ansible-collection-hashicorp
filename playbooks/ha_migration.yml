@@ -71,6 +71,7 @@
           - "{{ _vault_leader.api_address | urlsplit('hostname') }}" # OpenBao role expects hostname only
         openbao_bind_addr: "{{ migration_common_bind_addr }}"
         openbao_api_addr: "{{ migration_common_api_addr }}"
+        openbao_api_port: "{{ migration_common_api_port }}"
         openbao_registry_url: "{{ migration_openbao_registry_url }}"
         openbao_registry_username: "{{ migration_openbao_registry_username }}"
         openbao_registry_password: "{{ migration_openbao_registry_password }}"
