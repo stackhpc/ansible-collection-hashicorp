@@ -45,7 +45,7 @@
 
         - name: Assert that the leader has changed
           ansible.builtin.assert:
-            that: (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first) != ansible_facts.nodename
+            that: (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first).hostname != ansible_facts.nodename
             fail_msg: The original leader failed to step down. Check cluster status.
             # If it's compared with _vault_leader.api_address, Ansible skips as
             # the opposite condition was already evaluated for thie block
