@@ -1,0 +1,17 @@
+---
+- name: Fail if the current storage backend is not Raft
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/seal-status"
+  register: storage_query
+  failed_when: storage_query.json.storage_type != "raft"
+  changed_when: false
+  run_once: true
+
+- name: Backup snapshot of Raft data
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/storage/raft/snapshot"
+    headers:
+      X-Vault-Token: "{{ migration_common_root_token }}"
+    dest: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
+    mode: "0600"
+  become: true

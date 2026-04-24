@@ -1,0 +1,90 @@
+---
+- name: HA Vault to OpenBao migration
+  hosts: ordered_vault_hosts
+  serial: 1
+  any_errors_fatal: true
+  vars:
+    # Variable defaults from vault_bao_migration role
+    migration_vault_docker_name: vault
+    migration_openbao_docker_name: openbao
+    migration_openbao_docker_image: "openbao/openbao"
+    migration_openbao_docker_tag: "2.2.0"
+    migration_common_bind_addr: "127.0.0.1"
+    migration_common_api_port: 8200
+    migration_common_tls_key: ""
+    migration_common_tls_cert: ""
+    migration_common_tls_ca: ""
+    migration_common_protocol: "{{ 'https' if migration_common_tls_key and migration_common_tls_cert else 'http' }}"
+    migration_common_api_addr: "{{ migration_common_protocol ~ '://' ~ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
+    migration_openbao_registry_url: ""
+    migration_openbao_registry_username: ""
+    migration_openbao_registry_password: ""
+  tasks:
+    - name: Step down from leader if current host is Vault Raft leader
+      when: ansible_facts.nodename == _vault_leader.hostname
+      block:
+        - name: Step down from leader if current host is the Vault Raft leader
+          ansible.builtin.uri:
+            url: "{{ _vault_leader.api_address }}/v1/sys/step-down"
+            method: "POST"
+            status_code:
+              - 204
+            headers:
+              X-Vault-Token: "{{ migration_common_root_token }}"
+
+        - name: Wait for the cluster to set a new leader
+          ansible.builtin.wait_for:
+            timeout: 10 # A node sleeps for 10 seconds before attempting to grab leader role again
+
+        - name: Query cluster status again
+          ansible.builtin.uri:
+            url: "{{ _vault_followers[0].api_address }}/v1/sys/ha-status"
+            headers:
+              X-Vault-Token: "{{ migration_common_root_token }}"
+          register: ha_status
+
+        - name: Assert that the leader has changed
+          ansible.builtin.assert:
+            that: (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first).hostname != ansible_facts.nodename
+            fail_msg: The original leader failed to step down. Check cluster status.
+            # If it's compared with _vault_leader.api_address, Ansible skips as
+            # the opposite condition was already evaluated for thie block
+
+        - name: Update cluster status
+          ansible.builtin.set_fact:
+            _vault_leader: "{{ (ha_status.json.nodes | selectattr('active_node', 'equalto', true) | first) }}"
+            _vault_followers: "{{ ha_status.json.nodes | selectattr('active_node', 'equalto', false) | list }}"
+
+    - name: Stop Vault container at current host
+      community.docker.docker_container:
+        name: "{{ migration_vault_docker_name }}"
+        state: stopped
+      become: true
+
+    - name: Apply OpenBao role for current host
+      ansible.builtin.include_role:
+        name: stackhpc.hashicorp.openbao
+      vars:
+        openbao_cluster_name: "{{ migration_common_cluster_name }}"
+        openbao_config_dir: "{{ migration_openbao_config_dir }}"
+        openbao_raft_leaders:
+          - "{{ _vault_leader.api_address | urlsplit('hostname') }}" # OpenBao role expects hostname only
+        openbao_bind_addr: "{{ migration_common_bind_addr }}"
+        openbao_api_addr: "{{ migration_common_api_addr }}"
+        openbao_api_port: "{{ migration_common_api_port }}"
+        openbao_registry_url: "{{ migration_openbao_registry_url }}"
+        openbao_registry_username: "{{ migration_openbao_registry_username }}"
+        openbao_registry_password: "{{ migration_openbao_registry_password }}"
+        openbao_docker_name: "{{ migration_openbao_docker_name }}"
+        openbao_docker_image: "{{ migration_openbao_docker_image }}"
+        openbao_docker_tag: "{{ migration_openbao_docker_tag }}"
+        openbao_tls_cert: "{{ migration_common_tls_cert }}"
+        openbao_tls_key: "{{ migration_common_tls_key }}"
+        openbao_tls_ca: "{{ migration_common_tls_ca }}"
+
+    - name: Unseal OpenBao at current host
+      ansible.builtin.include_role:
+        name: stackhpc.hashicorp.vault_unseal
+      vars:
+        vault_api_addr: "{{ migration_common_api_addr }}"
+        vault_unseal_keys: "{{ migration_common_unseal_keys }}"

@@ -1,0 +1,142 @@
+---
+- name: Check if OpenBao is already running
+  community.docker.docker_container_info:
+    name: "{{ migration_openbao_docker_name }}"
+  register: docker_state
+
+- name: Query seal status
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/seal-status"
+  register: test_query
+  changed_when: false
+
+- name: Stop the play if OpenBao is already running and initialised
+  ansible.builtin.meta: end_play
+  when:
+    - docker_state.exists
+    - docker_state.container.State.Running | default(false)
+    - test_query.json.initialized
+
+- name: Create Raft snapshot
+  ansible.builtin.include_tasks: raft_backup.yml
+
+- name: Ensure Raft Snapshot exists
+  ansible.builtin.stat:
+    path: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
+  register: raft_snapshot_status
+  failed_when: not raft_snapshot_status.stat.exists
+  changed_when: false
+  become: true
+
+- name: Get cluster id of Vault
+  ansible.builtin.uri:
+    url: "{{ migration_common_init_addr }}/v1/sys/health"
+    status_code:
+      - 200
+      - 429
+      - 501
+      - 503
+  register: vault_cluster_id_query
+  retries: 50
+  delay: 1
+  run_once: true
+  until:
+    - vault_cluster_id_query.status == 200
+    - vault_cluster_id_query.json.cluster_id is defined
+
+- name: Stop Vault container
+  community.docker.docker_container:
+    name: "{{ migration_vault_docker_name }}"
+    state: stopped
+  become: true
+
+- name: Apply OpenBao role
+  ansible.builtin.import_role:
+    name: stackhpc.hashicorp.openbao
+  vars:
+    openbao_write_keys_file: false
+    openbao_set_keys_fact: true
+    openbao_docker_name: "{{ migration_openbao_docker_name }}"
+    openbao_bind_addr: "{{ migration_common_bind_addr }}"
+    openbao_api_addr: "{{ migration_common_api_addr }}"
+    openbao_api_port: "{{ migration_common_api_port }}"
+    openbao_registry_url: "{{ migration_openbao_registry_url }}"
+    openbao_registry_username: "{{ migration_openbao_registry_username }}"
+    openbao_registry_password: "{{ migration_openbao_registry_password }}"
+    openbao_config_dir: "{{ migration_openbao_config_dir }}"
+    openbao_cluster_name: "{{ migration_common_cluster_name }}"
+    openbao_docker_image: "{{ migration_openbao_docker_image }}"
+    openbao_docker_tag: "{{ migration_openbao_docker_tag }}"
+    openbao_tls_cert: "{{ migration_common_tls_cert }}"
+    openbao_tls_key: "{{ migration_common_tls_key }}"
+    openbao_tls_ca: "{{ migration_common_tls_ca }}"
+
+- name: Wait for OpenBao to be available
+  ansible.builtin.wait_for:
+    host: "{{ migration_common_bind_addr }}"
+    port: "{{ migration_common_api_port }}"
+    delay: 3
+    timeout: 30
+
+- name: Unseal Bao with temporary keys
+  ansible.builtin.include_role:
+    name: stackhpc.hashicorp.vault_unseal
+  vars:
+    vault_api_addr: "{{ migration_common_api_addr }}"
+    vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+
+- name: Restore Raft snapshot into OpenBao
+  ansible.builtin.uri:
+    url: "{{ migration_common_api_addr }}/v1/sys/storage/raft/snapshot-force"
+    method: "POST"
+    headers:
+      X-Vault-Token: "{{ openbao_keys.root_token }}"
+    status_code:
+      - 200
+      - 204
+    src: "{{ migration_vault_staging_dir_path }}/raft-snapshot.snap"
+    remote_src: true
+  become: true
+
+- name: Check if Raft restore is done and OpenBao is initialized
+  ansible.builtin.uri:
+    url: "{{ migration_common_init_addr }}/v1/sys/health"
+    status_code:
+      - 200
+      - 429
+      - 501
+      - 503
+  register: openbao_init_status
+  retries: 50
+  delay: 1
+  run_once: true
+  # 503 is used to indicate the OpenBao is initialized but sealed
+  # https://openbao.org/api-docs/system/health/
+  until: openbao_init_status.status == 503
+
+- name: Unseal OpenBao
+  ansible.builtin.import_role:
+    name: stackhpc.hashicorp.vault_unseal
+  vars:
+    vault_api_addr: "{{ migration_common_api_addr }}"
+    vault_unseal_keys: "{{ migration_common_unseal_keys }}"
+
+- name: Get cluster id of OpenBao
+  ansible.builtin.uri:
+    url: "{{ migration_common_init_addr }}/v1/sys/health"
+    status_code:
+      - 200
+      - 429
+      - 501
+      - 503
+  register: openbao_cluster_id_query
+  retries: 50
+  delay: 1
+  run_once: true
+  until:
+    - openbao_cluster_id_query.status == 200
+    - openbao_cluster_id_query.json.cluster_id is defined
+
+- name: Check restore is correctly done
+  ansible.builtin.assert:
+    that: vault_cluster_id_query.json.cluster_id == openbao_cluster_id_query.json.cluster_id
