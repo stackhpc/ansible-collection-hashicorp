@@ -17,7 +17,7 @@ openbao_tls_ca: ""
 
 openbao_protocol: "{{ 'https' if openbao_tls_key and openbao_tls_cert else 'http' }}"
 
-openbao_api_addr: "{{ openbao_bind_addr ~ ':' ~ openbao_api_port }}"
+openbao_api_addr: "{{ openbao_protocol ~ '://' ~ openbao_bind_addr ~ ':' ~ openbao_api_port }}"
 openbao_bind_addr: "127.0.0.1"
 openbao_init_addr: "{{ openbao_api_addr }}"
 openbao_cluster_addr: "{{ openbao_bind_addr ~ ':' ~ openbao_cluster_port }}"
