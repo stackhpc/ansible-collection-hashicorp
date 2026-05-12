@@ -84,6 +84,7 @@
   vars:
     vault_api_addr: "{{ migration_common_api_addr }}"
     vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+    vault_unseal_ca_cert: "{{ migration_vault_unseal_ca_cert if migration_common_protocol == 'https' else omit }}"
 
 - name: Restore Raft snapshot into OpenBao
   ansible.builtin.uri:
@@ -120,6 +121,7 @@
   vars:
     vault_api_addr: "{{ migration_common_api_addr }}"
     vault_unseal_keys: "{{ migration_common_unseal_keys }}"
+    vault_unseal_ca_cert: "{{ migration_vault_unseal_ca_cert if migration_common_protocol == 'https' else omit }}"
 
 - name: Get cluster id of OpenBao
   ansible.builtin.uri:

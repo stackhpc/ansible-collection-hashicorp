@@ -37,6 +37,7 @@ Role variables
     * `migration_common_tls_key`: Path to TLS key to use by Vault and OpenBao
     * `migration_common_tls_cert`: Path to TLS cert to use by Vault and OpenBao
     * `migration_common_tls_ca`: Path to TLS CA certificate that can be used by peers to validate the leaders TLS
+    * `migartion_vault_unseal_ca_cert`: Path to TLS CA certificate used for unsealing Vault/OpenBao. Default is system trust chain. (default: "/etc/pki/tls/certs/ca-bundle.crt" if the OS family is RedHat. Otherwise, "/etc/ssl/certs/ca-certificates.crt")
 
 * Hashicorp Vault
   * Mandatory

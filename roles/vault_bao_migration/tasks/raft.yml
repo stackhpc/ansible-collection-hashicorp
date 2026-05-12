@@ -91,6 +91,7 @@
       vars:
         vault_api_addr: "{{ migration_common_api_addr }}"
         vault_unseal_keys: "{{ migration_common_unseal_keys }}"
+        vault_unseal_ca_cert: "{{ migration_vault_unseal_ca_cert if migration_common_protocol == 'https' else omit }}"
 
 - name: Join Vault followers to Raft
   when:
@@ -130,6 +131,7 @@
       vars:
         vault_api_addr: "{{ migration_common_api_addr }}"
         vault_unseal_keys: "{{ migration_common_unseal_keys }}"
+        vault_unseal_ca_cert: "{{ migration_vault_unseal_ca_cert if migration_common_protocol == 'https' else omit }}"
 
 - name: Verify all peers are joined to the cluster
   when: _vault_followers | length > 0

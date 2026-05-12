@@ -14,6 +14,7 @@
     migration_common_tls_key: ""
     migration_common_tls_cert: ""
     migration_common_tls_ca: ""
+    migration_vault_unseal_ca_cert: "{{ '/etc/pki/tls/certs/ca-bundle.crt' if ansible_facts.os_family == 'RedHat' else '/etc/ssl/certs/ca-certificates.crt' }}"
     migration_common_protocol: "{{ 'https' if migration_common_tls_key and migration_common_tls_cert else 'http' }}"
     migration_common_api_addr: "{{ migration_common_protocol ~ '://' ~ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
     migration_openbao_registry_url: ""
@@ -88,3 +89,4 @@
       vars:
         vault_api_addr: "{{ migration_common_api_addr }}"
         vault_unseal_keys: "{{ migration_common_unseal_keys }}"
+        vault_unseal_ca_cert: "{{ migration_vault_unseal_ca_cert if migration_common_protocol == 'https' else omit }}"
