@@ -1,5 +1,5 @@
 ---
-- name: Check current stroage backend
+- name: Check current storage backend
   ansible.builtin.uri:
     url: "{{ vault_api_address }}/v1/sys/seal-status"
   vars:
