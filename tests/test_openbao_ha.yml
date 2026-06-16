@@ -4,7 +4,6 @@
   hosts: openbao_ha
   vars:
     openbao_log_keys: true
-    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
     openbao_set_keys_fact: true
     openbao_write_keys_file: true
     openbao_raft_leaders:
@@ -14,10 +13,6 @@
       - "{{ openbao_config_dir }}/openbao_file:/openbao/file"
       - "{{ openbao_config_dir }}/openbao_logs:/openbao/logs"
   tasks:
-    - name: Debug
-      ansible.builtin.debug:
-        var: openbao_api_addr
-
     - name: Ensure /etc/openbao exists
       ansible.builtin.file:
         path: /etc/openbao
@@ -40,7 +35,6 @@
       ansible.builtin.include_role:
         name: vault_unseal
       vars:
-        vault_api_addr: "{{ openbao_api_addr }}"
         vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
       run_once: true
 
@@ -57,7 +51,6 @@
       ansible.builtin.include_role:
         name: vault_unseal
       vars:
-        vault_api_addr: "{{ openbao_api_addr }}"
         vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
         vault_unseal_timeout: 10
 
@@ -67,7 +60,6 @@
   run_once: true
   vars:
     openbao_log_keys: true
-    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
     openbao_set_keys_fact: true
     openbao_write_keys_file: true
   tasks:
@@ -111,7 +103,6 @@
         vault_pki_write_int_ca_to_file: true
         vault_pki_write_pem_bundle: false
         vault_pki_write_root_ca_to_file: true
-        vault_api_addr: "{{ openbao_api_addr }}"
         vault_token: "{{ openbao_keys.root_token }}"
       block:
         - name: Configure PKI - create root/intermediate and generate certificates
@@ -139,7 +130,6 @@
         vault_pki_root_create: false
         vault_pki_write_certificate_files: true
         vault_pki_write_pem_bundle: true
-        vault_api_addr: "{{ openbao_api_addr }}"
         vault_token: "{{ openbao_keys.root_token }}"
       block:
         - name: Configure PKI - generate certificate pem bundle
