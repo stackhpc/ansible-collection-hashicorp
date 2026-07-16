@@ -101,3 +101,5 @@ openbao_write_keys_file: false
 openbao_write_keys_file_host: localhost
 # Path of file to write root token and unseal keys.
 openbao_write_keys_file_path: bao-keys.json
+
+# foo
