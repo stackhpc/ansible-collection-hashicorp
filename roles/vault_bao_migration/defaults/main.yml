@@ -6,7 +6,7 @@ migration_common_tls_cert: ""
 migration_common_tls_ca: ""
 migration_vault_unseal_ca_cert: "{{ '/etc/pki/tls/certs/ca-bundle.crt' if ansible_facts.os_family == 'RedHat' else '/etc/ssl/certs/ca-certificates.crt' }}"
 
-migration_common_protocol: "{{ 'https' if migration_common_tls_key and migration_common_tls_cert else 'http' }}"
+migration_common_protocol: "{{ 'https' if (migration_common_tls_key and migration_common_tls_cert) | bool else 'http' }}"
 
 migration_common_api_addr: "{{ migration_common_protocol ~ '://' ~ migration_common_bind_addr ~ ':' ~ migration_common_api_port }}"
 migration_common_bind_addr: "127.0.0.1"
@@ -51,48 +51,48 @@ _vault_nodes: []
 _vault_leader: {}
 _vault_followers: []
 
-migration_vault_raft_config: >
-  {
-    "cluster_name": "{{ migration_common_cluster_name }}",
-    "ui": true,
-    "api_addr": "{{ migration_common_api_addr }}",
-    "cluster_addr": "{{ migration_common_protocol }}://{{ migration_common_cluster_addr }}",
-    "listener": [{
-      "tcp": {
-        "address": "{{ migration_common_bind_addr }}:8200",
-        {% if migration_common_tls_key and migration_common_tls_cert %}
-        "tls_min_version": "tls12",
-        "tls_key_file": "/vault/config/{{ migration_common_tls_key }}",
-        "tls_cert_file": "/vault/config/{{ migration_common_tls_cert }}"
-        {% else %}
-        "tls_disable": "true"
-        {% endif %}
-      }{% if migration_common_bind_addr != '127.0.0.1' %},
-    },
-    {
-      "tcp": {
-        "address": "127.0.0.1:8200",
-        "tls_disable": "true"
-      }
-    {% endif %}
-    }],
-    "storage": {
-      "raft": {
-        "path": "/vault/file/",
-        "node_id": "raft_{{ inventory_hostname }}"{% if _vault_followers | length > 0 %},
-        "retry_join": {
-          "leader_api_addr": "{{ _vault_leader.api_address }}"{% if migration_common_tls_ca %},
-          "leader_ca_cert_file": "/vault/config/{{ migration_common_tls_ca }}"
-          {% endif %}
-        }
-        {% endif %}
-      }
-    },
-    "telemetry": {
-      "prometheus_retention_time": "30s",
-      "disable_hostname": true
-    }
-  }
+_migration_listener_tls:
+  - tcp:
+      address: "{{ migration_common_bind_addr ~ ':8200' }}"
+      tls_min_version: "tls12"
+      tls_key_file: "{{ '/vault/config/' ~ migration_common_tls_key }}"
+      tls_cert_file: "{{ '/vault/config/' ~ migration_common_tls_cert }}"
+
+_migration_listener_no_tls:
+  - tcp:
+      address: "{{ migration_common_bind_addr ~ ':8200' }}"
+      tls_disable: "true"
+
+_migration_listener_local:
+  - tcp:
+      address: '127.0.0.1:8200'
+      tls_disable: 'true'
+
+_migration_retry_join_base:
+  leader_api_addr: "{{ _vault_leader.api_address | default('') }}"
+
+_migration_retry_join_tls:
+  leader_ca_cert_file: "{{ '/vault/config/' ~ migration_common_tls_ca }}"
+
+_migration_retry_join:
+  retry_join: "{{ _migration_retry_join_base | combine(_migration_retry_join_tls if migration_common_tls_ca else {}) }}"
+
+_migration_raft_config:
+  path: "/vault/file/"
+  node_id: "raft_{{ inventory_hostname }}"
+
+migration_vault_raft_config:
+  cluster_name: "{{ migration_common_cluster_name }}"
+  ui: true
+  api_addr: "{{ migration_common_api_addr }}"
+  cluster_addr: "{{ migration_common_protocol }}://{{ migration_common_cluster_addr }}"
+  listener: "{{ (_migration_listener_tls if ((migration_common_tls_key and migration_common_tls_cert) | bool) else _migration_listener_no_tls) +
+                (_migration_listener_local if migration_common_bind_addr != '127.0.0.1' else []) }}"
+  storage:
+    raft: "{{ _migration_raft_config | combine(_migration_retry_join if _vault_followers | length > 0 else {}) }}"
+  telemetry:
+    prometheus_retention_time: "30s"
+    disable_hostname: true
 
 # Vault Docker options for when restarting Vault container with Raft
 migration_vault_container_options: {}
