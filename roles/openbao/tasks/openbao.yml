@@ -1,4 +1,34 @@
 ---
+- name: Get OpenBao user id and group id
+  community.docker.docker_container:
+    name: "openbao_uid_check"
+    image: "{{ openbao_docker_image }}:{{ openbao_docker_tag }}"
+    command: "id openbao"
+    detach: false
+    cleanup: true
+  register: id_openbao_result
+  become: true
+  run_once: true
+
+- name: Set OpenBao user id and group id
+  ansible.builtin.set_fact:
+    openbao_uid: "{{ id_openbao_result.container.Output | regex_search('uid=(\\d+)', '\\1') | first }}"
+    openbao_gid: "{{ id_openbao_result.container.Output | regex_search('gid=(\\d+)', '\\1') | first }}"
+
+- name: Ensure Openbao directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0770"
+    owner: "{{ openbao_uid }}"
+    group: "{{ openbao_gid }}"
+  become: true
+  loop:
+    - "{{ openbao_config_dir }}"
+    - "{{ openbao_config_dir }}/config"
+    - "{{ openbao_config_dir }}/openbao_file"
+    - "{{ openbao_config_dir }}/openbao_logs"
+
 - name: Ensure OpenBao container is running
   docker_container:
     name: "{{ openbao_docker_name }}"

@@ -14,13 +14,6 @@
       ansible.builtin.debug:
         var: openbao_api_addr
 
-    - name: Ensure /etc/openbao exists
-      ansible.builtin.file:
-        path: /etc/openbao
-        state: directory
-        mode: "0700"
-      become: true
-
     - name: Include openbao role
       ansible.builtin.include_role:
         name: openbao

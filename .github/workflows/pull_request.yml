@@ -16,12 +16,20 @@ jobs:
         ansible_version:
           - "2.15"
           - "2.18"
+          - "2.20"
         python_version:
           - "3.9"
           - "3.11"
+          - "3.12"
         exclude:
+          # Python 3.9 incompatible with ansible 2.18/2.20
           - python_version: "3.9"
             ansible_version: "2.18"
+          - python_version: "3.9"
+            ansible_version: "2.20"
+          # Python 3.11 incompatible with ansible 2.20
+          - python_version: "3.11"
+            ansible_version: "2.20"
         type:
           - openbao
           - openbao_ha

@@ -24,41 +24,36 @@ vault_tls_cert: ""
 
 vault_config_dir: ""
 
-vault_config: >
-  {
-    "cluster_name": "{{ vault_cluster_name }}",
-    "ui": true,
-    "api_addr": "{{ vault_api_addr }}",
-    "listener": [{
-      "tcp": {
-        "address": "{{ vault_bind_address }}:8200",
-        {% if vault_tls_key and vault_tls_cert %}
-        "tls_min_version": "tls12",
-        "tls_key_file": "/vault/config/{{ vault_tls_key }}",
-        "tls_cert_file": "/vault/config/{{ vault_tls_cert }}"
-        {% else %}
-        "tls_disable": "true"
-        {% endif %}
-      }{% if vault_bind_address != '127.0.0.1' %},
-    },
-    {
-      "tcp": {
-        "address": "127.0.0.1:8200",
-        "tls_disable": "true"
-      }
-    {% endif %}
-    }],
-    "storage": {
-    "consul": {
-       "address": "127.0.0.1:{{ consul_bind_port }}",
-       "path": "vault/"
-      }
-    },
-    "telemetry": {
-      "prometheus_retention_time": "30s",
-      "disable_hostname": true
-    }
-  }
+_vault_listener_tls:
+  - tcp:
+      address: "{{ vault_bind_address ~ ':8200' }}"
+      tls_min_version: "tls12"
+      tls_key_file: "{{ '/vault/config/' ~ vault_tls_key }}"
+      tls_cert_file: "{{ '/vault/config/' ~ vault_tls_cert }}"
+
+_vault_listener_no_tls:
+  - tcp:
+      address: "{{ vault_bind_address ~ ':8200' }}"
+      tls_disable: "true"
+
+_vault_listener_local:
+  - tcp:
+      address: '127.0.0.1:8200'
+      tls_disable: 'true'
+
+vault_config:
+  cluster_name: "{{ vault_cluster_name }}"
+  ui: true
+  api_addr: "{{ vault_api_addr }}"
+  listener: "{{ (_vault_listener_tls if (vault_tls_key and vault_tls_cert) else _vault_listener_no_tls) +
+                (_vault_listener_local if vault_bind_address != '127.0.0.1' else []) }}"
+  storage:
+    consul:
+      address: "127.0.0.1:{{ consul_bind_port }}"
+      path: "vault/"
+  telemetry:
+    prometheus_retention_time: "30s"
+    disable_hostname: true
 
 consul_bind_interface: "lo"
 consul_bind_ip: "{{ hostvars[inventory_hostname].ansible_facts[consul_bind_interface].ipv4.address }}"
