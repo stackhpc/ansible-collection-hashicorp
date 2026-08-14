@@ -28,10 +28,13 @@ openbao_cluster_port: 8201
 openbao_raft_leaders: []
 
 openbao_enable_ui: false
+openbao_unauthenticated_metrics_access: true
 
 _openbao_listener_tls:
   - tcp:
       address: "{{ openbao_bind_addr ~ ':' ~ openbao_api_port }}"
+      telemetry:
+        unauthenticated_metrics_access: "{{ openbao_unauthenticated_metrics_access | bool }}"
       tls_min_version: "tls12"
       tls_key_file: "{{ '/openbao/config/' ~ openbao_tls_key }}"
       tls_cert_file: "{{ '/openbao/config/' ~ openbao_tls_cert }}"
@@ -39,6 +42,8 @@ _openbao_listener_tls:
 _openbao_listener_no_tls:
   - tcp:
       address: "{{ openbao_bind_addr ~ ':' ~ openbao_api_port }}"
+      telemetry:
+        unauthenticated_metrics_access: "{{ openbao_unauthenticated_metrics_access | bool }}"
       tls_disable: "true"
 
 _openbao_listener_local:

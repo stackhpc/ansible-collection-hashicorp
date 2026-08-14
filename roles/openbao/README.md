@@ -40,7 +40,8 @@ Role variables
     * `openbao_write_keys_file_host`: Host on which to write root token and unseal keys. Default `localhost`
     * `openbao_write_keys_file_path`: Path of file to write root token and unseal keys. Default `bao-keys.json`
     * `openbao_raft_leaders`: List of IPs belonging to Raft leaders. Expected that the first and only entry is the IP address of the first OpenBao instance as this would be initialised whereas as the others will not.
-    * `openbao_enable_ui`: Whether to enable user interface that could be accessed from the `openbao_api_addr`. Default `false` 
+    * `openbao_enable_ui`: Whether to enable user interface that could be accessed from the `openbao_api_addr`. Default `false`
+    * `openbao_unauthenticated_metrics_access`: Whether to allow unauthenticated access to metrics on the OpenBao listener. Default `true`
 
 Root and unseal keys
 --------------------
