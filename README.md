@@ -4,7 +4,7 @@ This repo contains `stackhpc.hashicorp` Ansible Collection. The collection inclu
 
 ## Tested with Ansible
 
-Tested with the current Ansible 2.9-2.10 releases.
+Tested with the current Ansible 2.15-2.20 releases.
 
 ## Included content
 
