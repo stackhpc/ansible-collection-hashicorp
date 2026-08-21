@@ -46,7 +46,15 @@
     command: >
       server
   become: true
+  register: _openbao_container_deploy
 
+# Skipped when discover.yml already confirmed (via /v1/sys/health) that this
+# host was an initialized cluster member *and* the container above didn't
+# change - in that case the fact is still trustworthy and re-polling
+# /v1/sys/init would just be a redundant round trip. Otherwise (a manual
+# openbao_raft_leaders override where discover.yml never ran, a host that
+# wasn't initialized before, or a container that just got (re)created) this
+# always re-checks, since a pre-mutation fact can't be trusted post-mutation.
 - name: Check if OpenBao is initialized
   uri:
     url: "{{ openbao_init_addr }}/v1/sys/init"
@@ -55,10 +63,14 @@
   delay: 1
   run_once: true
   until: openbao_init_status.status == 200
+  when: >-
+    not (_openbao_node_state is defined and _openbao_node_state.initialized
+         and not _openbao_container_deploy.changed)
 
 - name: "Initialize OpenBao"
   run_once: true
   when:
+    - openbao_init_status is not skipped
     - not openbao_init_status.json.initialized
   block:
     - name: Initialize OpenBao

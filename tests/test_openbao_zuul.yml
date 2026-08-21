@@ -1,36 +1,115 @@
 ---
-- name: Prepare for openbao role
+- name: Deploy HA OpenBao without nominating a leader
   gather_facts: true
-  hosts: openbao
+  hosts: bao
+  any_errors_fatal: true
   vars:
     openbao_config_dir: "/etc/openbao"
     openbao_log_keys: true
-    openbao_bind_addr: "127.0.0.1"
-    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
     openbao_set_keys_fact: true
     openbao_write_keys_file: true
-    # Single-host deployment - no group-completeness concern, and this
-    # inventory's group is "openbao", not the "bao" default.
-    openbao_cluster_group: ""
+    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
   tasks:
+    # Real, separate Zuul nodes - no per-host bind_addr/docker_name/config_dir
+    # overrides needed (unlike the loopback tests/test_openbao_ha.yml), but
+    # openbao_bind_addr has to be set as a fact (not a play var) so it also
+    # survives into the second, PKI-testing play below.
+    - name: Set OpenBao bind address from this host's default IPv4 address
+      ansible.builtin.set_fact:
+        openbao_bind_addr: "{{ ansible_default_ipv4.address }}"
+
     - name: Debug
       ansible.builtin.debug:
         var: openbao_api_addr
 
-    - name: Include openbao role
+    - name: Include openbao role (no openbao_raft_leaders set - cluster auto-discovery)
       ansible.builtin.include_role:
         name: openbao
 
-    - name: Include openbao role (idempotence test)
+      # As this test is evaluating OpenBao configured for high availability backed
+      # by `Raft` we must first ensure that the primary or leader instance is unsealed
+      # before attempting to unseal the other members.
+    - name: Unseal vault # noqa: run-once[task]
       ansible.builtin.include_role:
-        name: openbao
+        name: vault_unseal
+      vars:
+        vault_api_addr: "{{ openbao_api_addr }}"
+        vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+      run_once: true
 
+      # As the first instance is now unsealed the other instances will now need some
+      # time to connect before we can proceed.
+    - name: Wait for OpenBao Raft peers to connect
+      ansible.builtin.wait_for:
+        timeout: 30
+      delegate_to: localhost
+
+      # Raft peers take few seconds before they report an unsealed state therefore
+      # we must wait.
     - name: Unseal vault
       ansible.builtin.include_role:
         name: vault_unseal
       vars:
         vault_api_addr: "{{ openbao_api_addr }}"
         vault_unseal_keys: "{{ openbao_keys.keys_base64 }}"
+        vault_unseal_timeout: 10
+
+    - name: Record container creation time before re-running the role
+      community.docker.docker_container_info:
+        name: "{{ openbao_docker_name }}"
+      register: _pre_idempotence_info
+      become: true
+
+    - name: Include openbao role again (idempotence + re-discovery test)
+      ansible.builtin.include_role:
+        name: openbao
+
+    - name: Record container creation time after re-running the role
+      community.docker.docker_container_info:
+        name: "{{ openbao_docker_name }}"
+      register: _post_idempotence_info
+      become: true
+
+    - name: Assert no already-healthy node was needlessly recreated
+      ansible.builtin.assert:
+        that:
+          - _pre_idempotence_info.container.Created == _post_idempotence_info.container.Created
+        fail_msg: >-
+          {{ inventory_hostname }}'s OpenBao container was recreated by a
+          no-op re-run - cluster auto-discovery must have computed a
+          different openbao_raft_leaders value than last time.
+
+    - name: Query Raft cluster membership from this node
+      ansible.builtin.uri:
+        url: "{{ openbao_api_addr }}/v1/sys/storage/raft/configuration"
+        headers:
+          X-Vault-Token: "{{ openbao_keys.root_token }}"
+      register: _raft_config
+
+    - name: Assert every node joined the same Raft cluster
+      ansible.builtin.assert:
+        that:
+          - _raft_config.json.data.config.servers | length == groups['bao'] | length
+        fail_msg: >-
+          Expected {{ groups['bao'] | length }} Raft voters as seen from
+          {{ inventory_hostname }}, got
+          {{ _raft_config.json.data.config.servers | length }}.
+
+- name: Deploy HA OpenBao
+  gather_facts: true
+  hosts: bao
+  any_errors_fatal: true
+  run_once: true
+  vars:
+    openbao_log_keys: true
+    openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
+    openbao_set_keys_fact: true
+    openbao_write_keys_file: true
+  tasks:
+    - name: Include OpenBao keys
+      ansible.builtin.include_vars:
+        file: "bao-keys.json"
+        name: openbao_keys
 
     - name: Configure PKI - create root/intermediate and generate certificates
       vars:

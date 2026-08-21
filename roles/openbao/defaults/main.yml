@@ -27,6 +27,23 @@ openbao_cluster_port: 8201
 
 openbao_raft_leaders: []
 
+# The value openbao.yml's docker_container/storage.raft config actually
+# consumes. discover.yml only ever overrides THIS (via set_fact) when it
+# auto-discovers a join target - it never touches openbao_raft_leaders
+# itself, so that caller-facing input stays stable across multiple
+# include_role calls in the same play and discovery always re-runs cleanly.
+_openbao_effective_raft_leaders: "{{ openbao_raft_leaders }}"
+
+# Inventory group containing every host that should end up in this OpenBao
+# raft cluster. When set, and openbao_raft_leaders is left at its default,
+# the role verifies the current play targets every host in this group before
+# attempting cluster auto-discovery (see discover.yml) - a partial run (e.g.
+# via --limit) can't safely decide who the leader/join target is. Defaults
+# to "bao", the inventory group name this collection's deployments use in
+# practice; set to "" to disable the check, or override for a different
+# group name.
+openbao_cluster_group: "bao"
+
 openbao_enable_ui: false
 openbao_unauthenticated_metrics_access: true
 
@@ -52,7 +69,7 @@ _openbao_listener_local:
       tls_disable: 'true'
 
 _openbao_retry_join_base:
-  leader_api_addr: "{{ openbao_protocol ~ '://' ~ (openbao_raft_leaders | default(['']) | first) ~ ':' ~ openbao_api_port }}"
+  leader_api_addr: "{{ openbao_protocol ~ '://' ~ (_openbao_effective_raft_leaders | default(['']) | first) ~ ':' ~ openbao_api_port }}"
 
 _openbao_retry_join_tls:
   leader_ca_cert_file: "{{ '/openbao/config/' ~ openbao_tls_ca }}"
@@ -72,7 +89,7 @@ openbao_config:
   listener: "{{ (_openbao_listener_tls if (openbao_tls_key and openbao_tls_cert) else _openbao_listener_no_tls) +
                 (_openbao_listener_local if not openbao_bind_addr.startswith('127.') else []) }}"
   storage:
-    raft: "{{ _openbao_raft_config | combine(_openbao_retry_join if openbao_raft_leaders | length > 0 else {}) }}"
+    raft: "{{ _openbao_raft_config | combine(_openbao_retry_join if _openbao_effective_raft_leaders | length > 0 else {}) }}"
   telemetry:
     prometheus_retention_time: "30s"
     disable_hostname: true

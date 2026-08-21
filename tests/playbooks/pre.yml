@@ -1,0 +1,48 @@
+---
+- name: Prepare environment
+  hosts: all
+  any_errors_fatal: true
+  become: true
+  vars:
+    logs_dir: "/tmp/logs"
+  roles:
+    - ensure-output-dirs
+    - role: "ensure-pip"
+      when: ansible_facts.distribution == "Ubuntu"
+    - ensure-docker
+
+- name: Install OpenBao role's remote Python dependencies
+  hosts: all
+  any_errors_fatal: true
+  become: true
+  vars:
+    # Ubuntu Noble marks the system Python as externally-managed (PEP 668);
+    # these are disposable Zuul test nodes so bypassing that is acceptable.
+    _pip_extra_args: "{{ '--break-system-packages' if ansible_facts.distribution == 'Ubuntu' else omit }}"
+  tasks:
+    - name: Install required Python modules
+      become: true
+      package:
+        name:
+          - python3-pip
+          - python3-setuptools
+          - python3-requests
+
+    - name: Install docker and hvac Python packages
+      ansible.builtin.pip:
+        name:
+          - ansible-modules-hashivault
+          - docker
+          - hvac
+        state: present
+        extra_args: "{{ _pip_extra_args }}"
+
+- name: Install Ansible on openbao-1
+  hosts: openbao-1
+  tasks:
+    - name: Create venv and install ansible-core
+      ansible.builtin.pip:
+        name:
+          - "ansible{{ ansible_version_constraint }}"
+        virtualenv: "{{ ansible_env.HOME }}/venv"
+        virtualenv_command: "python3 -m venv"

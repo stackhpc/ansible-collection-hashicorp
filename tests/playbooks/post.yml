@@ -1,0 +1,33 @@
+---
+- name: Collect OpenBao logs and facts
+  hosts: all
+  vars:
+    zuul_output_dir: "{{ ansible_user_dir }}/zuul-output"
+  tasks:
+    - name: Print all facts
+      ansible.builtin.copy:
+        content: "{{ hostvars[inventory_hostname] | to_nice_json }}"
+        dest: "{{ zuul_output_dir }}/facts.json"
+        mode: "0600"
+
+    - name: Collect OpenBao container logs
+      community.docker.docker_container_info:
+        name: "{{ openbao_docker_name | default('openbao') }}"
+      register: _openbao_container_info
+      become: true
+      ignore_errors: true
+
+    - name: Fetch OpenBao container logs
+      ansible.builtin.command:
+        cmd: "docker logs {{ openbao_docker_name | default('openbao') }}"
+      register: _openbao_container_logs
+      become: true
+      changed_when: false
+      when: _openbao_container_info.exists | default(false)
+
+    - name: Write OpenBao container logs
+      ansible.builtin.copy:
+        content: "{{ _openbao_container_logs.stdout }}\n{{ _openbao_container_logs.stderr | default('') }}"
+        dest: "{{ zuul_output_dir }}/openbao-container.log"
+        mode: "0600"
+      when: _openbao_container_info.exists | default(false) and _openbao_container_logs is defined and _openbao_container_logs is succeeded
