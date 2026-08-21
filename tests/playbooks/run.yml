@@ -1,11 +1,16 @@
 ---
-- name: Run test_bao_ha.yml
+- name: Run test_openbao_zuul.yml
   hosts: openbao-1
   any_errors_fatal: true
   tasks:
+    - name: Template out inventory
+      ansible.builtin.template:
+        src: "{{ zuul.executor.work_root }}/{{ zuul.project.src_dir }}/tests/templates/inventory.j2"
+        dest: "/tmp/inventory"
+
     - name: Run tests
       ansible.builtin.shell:
         cmd: >
           . {{ ansible_env.HOME }}/venv/bin/activate &&
-          pwd &&
-          ansible-playbook tests/test_openbao_ha.yml
+          ansible-playbook -i /tmp/inventory
+          {{ ansible_env.HOME }}/{{ zuul.project.src_dir }}/tests/test_openbao_zuul.yml

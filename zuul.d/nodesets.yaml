@@ -16,12 +16,12 @@
           - openbao-3
 
 - nodeset:
-    name: openbao-rocky9-multinode
+    name: openbao-rocky10-multinode
     nodes:
       - name: openbao-1
-        label: rocky-9
+        label: rocky-10
       - name: openbao-2
-        label: rocky-9
+        label: rocky-10
       - name: openbao-3
-        label: rocky-9
+        label: rocky-10
     groups: *multinode_groups
