@@ -29,7 +29,7 @@
       # As this test is evaluating OpenBao configured for high availability backed
       # by `Raft` we must first ensure that the primary or leader instance is unsealed
       # before attempting to unseal the other members.
-    - name: Unseal vault
+    - name: Unseal vault # noqa: run-once[task]
       ansible.builtin.include_role:
         name: vault_unseal
       vars:

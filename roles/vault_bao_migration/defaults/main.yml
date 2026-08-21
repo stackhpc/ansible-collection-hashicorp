@@ -86,8 +86,8 @@ migration_vault_raft_config:
   ui: true
   api_addr: "{{ migration_common_api_addr }}"
   cluster_addr: "{{ migration_common_protocol }}://{{ migration_common_cluster_addr }}"
-  listener: "{{ (_migration_listener_tls if ((migration_common_tls_key | length > 0) and (migration_common_tls_cert | length > 0)) else _migration_listener_no_tls) +
-                (_migration_listener_local if migration_common_bind_addr != '127.0.0.1' else []) }}"
+  listener: "{{ (_migration_listener_tls if ((migration_common_tls_key | length > 0) and (migration_common_tls_cert | length > 0))
+                else _migration_listener_no_tls) + (_migration_listener_local if migration_common_bind_addr != '127.0.0.1' else []) }}"
   storage:
     raft: "{{ _migration_raft_config | combine(_migration_retry_join if _vault_followers | length > 0 else {}) }}"
   telemetry:

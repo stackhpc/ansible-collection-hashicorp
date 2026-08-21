@@ -1,4 +1,7 @@
 ---
+exclude_paths:
+  - .ansible/
+  - .github/
 skip_list:
   - var-naming[no-role-prefix]
   - galaxy[no-changelog]
