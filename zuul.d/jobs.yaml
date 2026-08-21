@@ -1,0 +1,32 @@
+---
+## Templates
+
+# Ubuntu Noble multinode template
+
+- job:
+    name: .openbao-noble-multinode-template
+    abstract: true
+    parent: openbao-base
+    nodeset: openbao-noble-multinode
+
+# Rocky 9 multinode template
+
+- job:
+    name: .openbao-rocky9-multinode-template
+    abstract: true
+    parent: openbao-base
+    nodeset: openbao-rocky9-multinode
+
+## Job definitions
+## These deploy a real 3-node OpenBao raft cluster without nominating a
+## leader via openbao_raft_leaders, relying on the role's cluster
+## auto-discovery (see roles/openbao/tasks/discover.yml) to elect a
+## bootstrap node and join the rest.
+
+- job:
+    name: openbao-noble-multinode
+    parent: .openbao-noble-multinode-template
+
+- job:
+    name: openbao-rocky9-multinode
+    parent: .openbao-rocky9-multinode-template

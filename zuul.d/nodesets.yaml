@@ -1,0 +1,27 @@
+---
+- nodeset:
+    name: openbao-noble-multinode
+    nodes:
+      - name: openbao-1
+        label: ubuntu-noble
+      - name: openbao-2
+        label: ubuntu-noble
+      - name: openbao-3
+        label: ubuntu-noble
+    groups: &multinode_groups
+      - name: openbao_ha
+        nodes: &multinode_nodes
+          - openbao-1
+          - openbao-2
+          - openbao-3
+
+- nodeset:
+    name: openbao-rocky9-multinode
+    nodes:
+      - name: openbao-1
+        label: rocky-9
+      - name: openbao-2
+        label: rocky-9
+      - name: openbao-3
+        label: rocky-9
+    groups: *multinode_groups

@@ -1,0 +1,11 @@
+---
+- name: Run test_bao_ha.yml
+  hosts: openbao-1
+  any_errors_fatal: true
+  tasks:
+    - name: Run tests
+      ansible.builtin.shell:
+        cmd: >
+          . {{ ansible_env.HOME }}/venv/bin/activate &&
+          pwd &&
+          ansible-playbook tests/test_openbao_ha.yml
