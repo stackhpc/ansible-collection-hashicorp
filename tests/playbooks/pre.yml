@@ -43,6 +43,6 @@
     - name: Create venv and install ansible-core
       ansible.builtin.pip:
         name:
-          - "ansible-core{{ ansible_core_version_constraint }}"
+          - "ansible{{ ansible_version_constraint }}"
         virtualenv: "{{ ansible_env.HOME }}/venv"
         virtualenv_command: "python3 -m venv"

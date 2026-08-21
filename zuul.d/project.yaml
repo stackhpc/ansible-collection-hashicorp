@@ -3,8 +3,8 @@
     check:
       jobs:
         - openbao-noble-multinode
-        - openbao-rocky9-multinode
+        - openbao-rocky10-multinode
     gate:
       jobs:
         - openbao-noble-multinode
-        - openbao-rocky9-multinode
+        - openbao-rocky10-multinode
