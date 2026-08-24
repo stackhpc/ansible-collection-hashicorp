@@ -1,0 +1,159 @@
+---
+# Auto-discover OpenBao raft cluster state across the play's hosts so that
+# operators don't have to manually nominate a leader via `openbao_raft_leaders`.
+# Skipped entirely when the caller already set `openbao_raft_leaders` explicitly.
+
+- name: Fail if this play uses serial batching
+  ansible.builtin.fail:
+    msg: >-
+      OpenBao cluster auto-discovery needs to see every host in the cluster
+      within a single batch, but this play is only running
+      {{ ansible_play_batch | length }} of {{ ansible_play_hosts_all | length }}
+      hosts at once (serial is set). Re-run without serial, or set
+      openbao_raft_leaders explicitly to bypass discovery.
+  run_once: true
+  when:
+    - openbao_raft_leaders | length == 0
+    - ansible_play_batch | length < ansible_play_hosts_all | length
+
+- name: Fail if the configured OpenBao cluster group does not exist in inventory
+  ansible.builtin.fail:
+    msg: >-
+      openbao_cluster_group is set to '{{ openbao_cluster_group }}' but no
+      such inventory group exists, so the cluster-completeness safety check
+      can't run. Either name this cluster's hosts' group
+      '{{ openbao_cluster_group }}', set openbao_cluster_group to the
+      correct group name, or set it to "" to explicitly skip this check
+      (e.g. for a single-host deployment with no group-completeness
+      concern).
+  run_once: true
+  when:
+    - openbao_raft_leaders | length == 0
+    - openbao_cluster_group | length > 0
+    - openbao_cluster_group not in groups
+
+- name: Fail if this play does not target the full OpenBao cluster group
+  ansible.builtin.fail:
+    msg: >-
+      This play only targets {{ ansible_play_hosts_all | length }} of the
+      {{ groups[openbao_cluster_group] | length }} hosts in the
+      '{{ openbao_cluster_group }}' inventory group (missing:
+      {{ groups[openbao_cluster_group] | difference(ansible_play_hosts_all) | join(', ') }}).
+      OpenBao cluster auto-discovery needs visibility of every host in the
+      cluster to safely decide who to join - re-run against the full group
+      (no --limit), or set openbao_raft_leaders explicitly to bypass
+      discovery.
+  run_once: true
+  when:
+    - openbao_raft_leaders | length == 0
+    - openbao_cluster_group | length > 0
+    - openbao_cluster_group in groups
+    - (groups[openbao_cluster_group] | difference(ansible_play_hosts_all) | length) > 0
+
+- name: Check if OpenBao container exists
+  community.docker.docker_container_info:
+    name: "{{ openbao_docker_name }}"
+  register: _openbao_container_info
+  become: true
+  when: openbao_raft_leaders | length == 0
+
+- name: Check for existing OpenBao raft data
+  ansible.builtin.stat:
+    path: "{{ openbao_config_dir }}/openbao_file/raft/raft.db"
+  register: _openbao_raft_data_stat
+  become: true
+  when: openbao_raft_leaders | length == 0
+
+- name: Set OpenBao container running fact
+  ansible.builtin.set_fact:
+    _openbao_container_running: >-
+      {{ _openbao_container_info.exists and
+         (_openbao_container_info.container.State.Running | default(false)) }}
+  when: openbao_raft_leaders | length == 0
+
+# Only enforced for multi-host plays: a stopped container with existing data
+# is genuinely ambiguous there (did this node fail, and would restarting it
+# risk mis-joining/mis-electing?), so it's worth a human looking first. For a
+# single-host play there's no other node to conflict with - restarting (or
+# reconfiguring) this host's own container against its own existing data is
+# exactly what should happen, and is what the role always did before
+# discovery existed. Keeps single-node deployments idempotent/reconfigurable.
+- name: Fail if OpenBao data exists locally but its container is not running
+  ansible.builtin.fail:
+    msg: >-
+      OpenBao raft data was found in {{ openbao_config_dir }}/openbao_file on
+      {{ inventory_hostname }} but the "{{ openbao_docker_name }}" container is
+      not running. This host may have failed or been stopped outside of this
+      role. Refusing to automatically re-bootstrap or re-join it - investigate
+      and recover this node manually before re-running.
+  when:
+    - openbao_raft_leaders | length == 0
+    - ansible_play_hosts_all | length > 1
+    - _openbao_raft_data_stat.stat.exists
+    - not _openbao_container_running
+
+- name: Check OpenBao health on hosts where the container is running
+  ansible.builtin.uri:
+    url: "{{ openbao_init_addr }}/v1/sys/health"
+    ca_path: "{{ openbao_ca_cert | default(omit) }}"
+    status_code:
+      - 200 # initialized, unsealed, active
+      - 429 # unsealed, standby
+      - 472 # data recovery mode replication secondary, active
+      - 473 # performance standby
+      - 501 # not initialized
+      - 503 # sealed
+  register: _openbao_health
+  retries: 30
+  delay: 1
+  until: _openbao_health is success
+  when:
+    - openbao_raft_leaders | length == 0
+    - _openbao_container_running
+
+- name: Record this host's OpenBao cluster state
+  ansible.builtin.set_fact:
+    _openbao_node_state:
+      running: "{{ _openbao_container_running }}"
+      initialized: "{{ _openbao_container_running and _openbao_health.status != 501 }}"
+      address: "{{ openbao_bind_addr }}"
+  when: openbao_raft_leaders | length == 0
+
+# NOT sorted: list order follows ansible_play_hosts_all so the chosen join
+# target is whichever currently-healthy peer comes EARLIEST in play order,
+# and stays that way as later peers join - a newly-healthy host must never
+# bump an already-targeted, already-established peer out of first place, or
+# every host still pointing at the old target would see its retry_join
+# address change and get needlessly recreated.
+- name: Determine healthy OpenBao cluster members and fallback bootstrap seed
+  ansible.builtin.set_fact:
+    _openbao_healthy_addresses: >-
+      {{ ansible_play_hosts_all
+         | map('extract', hostvars, '_openbao_node_state')
+         | select('defined')
+         | selectattr('running')
+         | selectattr('initialized')
+         | map(attribute='address')
+         | list }}
+    _openbao_fresh_seed: "{{ ansible_play_hosts_all | first }}"
+  when: openbao_raft_leaders | length == 0
+
+# The join target is whichever currently-healthy peer comes first (see
+# above), or - if nobody is healthy yet - the deterministically elected
+# bootstrap seed (using its plain openbao_bind_addr, not a fact that seed
+# may never have set if it failed earlier in this file). Whichever host IS
+# the target gets an empty list so it initialises/stays standalone; every
+# other host points at it. A host's own address is only ever compared
+# against a single stable target, so this never flips between empty and
+# non-empty for an already-joined follower across runs, and an
+# already-healthy container is never needlessly recreated.
+- name: Compute effective OpenBao raft join target for this host
+  ansible.builtin.set_fact:
+    _openbao_effective_raft_leaders: >-
+      {{ [] if openbao_bind_addr == _openbao_join_target else [_openbao_join_target] }}
+  vars:
+    _openbao_join_target: >-
+      {{ _openbao_healthy_addresses | first
+         if _openbao_healthy_addresses
+         else hostvars[_openbao_fresh_seed].openbao_bind_addr }}
+  when: openbao_raft_leaders | length == 0
