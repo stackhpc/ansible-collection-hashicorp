@@ -1,0 +1,11 @@
+---
+- job:
+    parent: base
+    name: openbao-base
+    pre-run: tests/playbooks/pre.yml
+    run: tests/playbooks/run.yml
+    post-run: tests/playbooks/post.yml
+    timeout: 3600
+    post-timeout: 900
+    vars:
+      ansible_version_constraint: "==14.3.*"

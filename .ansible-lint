@@ -2,6 +2,9 @@
 exclude_paths:
   - .ansible/
   - .github/
+mock_roles:
+  - ensure-output-dirs
+  - ensure-pip
 skip_list:
   - var-naming[no-role-prefix]
   - galaxy[no-changelog]
