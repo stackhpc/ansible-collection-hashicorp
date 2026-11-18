@@ -15,6 +15,31 @@
     openbao_uid: "{{ id_openbao_result.container.Output | regex_search('uid=(\\d+)', '\\1') | first }}"
     openbao_gid: "{{ id_openbao_result.container.Output | regex_search('gid=(\\d+)', '\\1') | first }}"
 
+- name: Get stats of files for OpenBao TLS
+  when: openbao_config_dir != ""
+  become: true
+  block:
+    - name: Stat OpenBao TLS certificate
+      ansible.builtin.stat:
+        path: "{{ openbao_config_dir }}/{{ openbao_tls_cert }}"
+        follow: true
+      register: openbao_tls_cert_stat
+      when: openbao_tls_cert != ""
+
+    - name: Stat OpenBao TLS key
+      ansible.builtin.stat:
+        path: "{{ openbao_config_dir }}/{{ openbao_tls_key }}"
+        follow: true
+      register: openbao_tls_key_stat
+      when: openbao_tls_key != ""
+
+    - name: Stat OpenBao CA certificate
+      ansible.builtin.stat:
+        path: "{{ openbao_config_dir }}/{{ openbao_tls_ca }}"
+        follow: true
+      register: openbao_tls_ca_stat
+      when: openbao_tls_ca != ""
+
 - name: Ensure Openbao directories exist
   ansible.builtin.file:
     path: "{{ item }}"
@@ -39,6 +64,10 @@
     volumes: "{{ _openbao_volumes }}"
     comparisons:
       '*': strict
+    labels:
+      openbao_tls_cert_hash: "{{ openbao_tls_cert_stat.stat.checksum | default(omit) }}"
+      openbao_tls_key_hash: "{{ openbao_tls_key_stat.stat.checksum | default(omit) }}"
+      openbao_tls_ca_hash: "{{ openbao_tls_ca_stat.stat.checksum | default(omit) }}"
     restart_policy: "always"
     env:
       BAO_LOCAL_CONFIG: "{{ openbao_config | to_json }}"
