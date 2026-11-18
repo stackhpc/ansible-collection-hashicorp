@@ -9,6 +9,9 @@
     openbao_api_addr: "{{ 'http' ~ '://' ~ openbao_bind_addr ~ ':8200' }}"
     openbao_set_keys_fact: true
     openbao_write_keys_file: true
+    # Single-host deployment - no group-completeness concern, and this
+    # inventory's group is "openbao", not the "bao" default.
+    openbao_cluster_group: ""
   tasks:
     - name: Debug
       ansible.builtin.debug:

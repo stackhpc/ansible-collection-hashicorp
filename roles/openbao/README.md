@@ -39,9 +39,53 @@ Role variables
     * `openbao_write_keys_file`: Whether to write the root token and unseal keys to a file. Default `false`
     * `openbao_write_keys_file_host`: Host on which to write root token and unseal keys. Default `localhost`
     * `openbao_write_keys_file_path`: Path of file to write root token and unseal keys. Default `bao-keys.json`
-    * `openbao_raft_leaders`: List of IPs belonging to Raft leaders. Expected that the first and only entry is the IP address of the first OpenBao instance as this would be initialised whereas as the others will not.
+    * `openbao_raft_leaders`: List of IPs belonging to Raft leaders. Expected that the first and only entry is the IP address of the first OpenBao instance as this would be initialised whereas as the others will not. Optional - when left unset (the default, `[]`), the role auto-discovers cluster state (see below) and computes this per host, so it does not need to be nominated manually.
+    * `openbao_cluster_group`: Name of the inventory group containing every host that should be part of this OpenBao raft cluster. Sanity-checked, before auto-discovery runs, that the group exists and that the current play actually targets every host in it (guards against a `--limit`'d run making an unsafe partial decision; `serial` is detected and blocked separately, unconditionally). Default `"bao"`, the inventory group name this collection's deployments use in practice - if your inventory has no group with this name, the role **fails** rather than silently skipping the check, since a non-existent group is more likely a misconfiguration than an intentional opt-out. For a single-host deployment (or any inventory that doesn't use a `bao` group), set it explicitly to your real group name, or to `""` to skip the check outright. Ignored if `openbao_raft_leaders` is set explicitly.
     * `openbao_enable_ui`: Whether to enable user interface that could be accessed from the `openbao_api_addr`. Default `false`
     * `openbao_unauthenticated_metrics_access`: Whether to allow unauthenticated access to metrics on the OpenBao listener. Default `true`
+
+Automatic leader/cluster discovery
+-----------------------------------
+
+If `openbao_raft_leaders` is left at its default (`[]`), the role no longer
+requires an operator to nominate which host bootstraps the cluster. Instead,
+for every host in the play it:
+
+1. Checks whether the `openbao_docker_name` container exists/is running, and
+   whether raft data already exists on disk under `openbao_config_dir`.
+2. In a **multi-host** play, fails that host if raft data is present but the
+   container is **not** running - this indicates the node failed or was
+   stopped outside of the role, and the role will not silently re-bootstrap
+   or re-join over existing data (which could mis-elect a leader or
+   mis-join a cluster). Recover the node manually before re-running. For a
+   single-host play this check doesn't apply - there's no other node to
+   conflict with, so the role just (re)starts/reconfigures that host's own
+   container against its own existing data, same as it always has.
+3. Queries `/v1/sys/health` on any host whose container is running to
+   determine whether it is already an initialized cluster member.
+4. Every host's `openbao_raft_leaders` is computed from a single, stable join
+   target: whichever currently-healthy member comes first in the play's host
+   order, or - if nobody is healthy yet - a deterministically elected
+   bootstrap host. Whichever host *is* that target gets an empty list (so it
+   initialises/stays standalone); every other host points at it. Because the
+   target never changes for an already-established peer, an already-healthy
+   container is never needlessly recreated by a later run.
+
+This discovery relies on being able to see every host's state in the same
+play, so a play using `serial` is detected and fails immediately. The play
+including this role should also set `any_errors_fatal: true` so a failure on
+one host (per point 2 above) stops the rollout rather than leaving the
+cluster partially joined.
+
+`openbao_raft_leaders` itself is never modified by the role - discovery
+writes its result to an internal variable instead - so including this role
+more than once in the same play (e.g. an idempotence check) always
+re-discovers cluster state from scratch on every invocation.
+
+Setting `openbao_raft_leaders` explicitly (as before) skips all of the above
+and keeps the previous, manual behaviour - this is still used by e.g. the
+Vault-to-OpenBao migration playbook, which computes the leader from the
+existing Vault cluster's state instead.
 
 Root and unseal keys
 --------------------

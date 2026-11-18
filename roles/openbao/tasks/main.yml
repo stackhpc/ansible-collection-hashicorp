@@ -2,5 +2,8 @@
 - name: "Vault Prerequisites"
   import_tasks: prereqs.yml
 
+- name: "Discover existing OpenBao cluster state"
+  import_tasks: discover.yml
+
 - name: "Deploy OpenBao"
   import_tasks: openbao.yml
